@@ -1,0 +1,90 @@
+name: Keycloak Integration Tests
+
+on:
+  push:
+    paths:
+      - 'docker-compose.yml'
+      - 'keycloak/**'
+      - 'scripts/keycloak-*.sh'
+      - '.github/workflows/keycloak-test.yml'
+  pull_request:
+    paths:
+      - 'docker-compose.yml'
+      - 'keycloak/**'
+      - 'scripts/keycloak-*.sh'
+      - '.github/workflows/keycloak-test.yml'
+
+jobs:
+  keycloak-test:
+    name: Test Keycloak Configuration
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Start Keycloak stack
+        run: |
+          docker-compose up -d
+          echo "Waiting for services to be healthy..."
+          timeout 300 bash -c 'until docker-compose ps | grep -E "(healthy|running)" | wc -l | grep -q "5"; do sleep 5; done'
+
+      - name: Check services health
+        run: |
+          docker-compose ps
+          docker-compose logs --tail=50
+
+      - name: Run Keycloak setup script
+        run: |
+          ./scripts/keycloak-realm-setup.sh
+
+      - name: Test Keycloak authentication
+        run: |
+          # Test admin login
+          ADMIN_TOKEN=$(curl -s -X POST "http://localhost:8080/realms/master/protocol/openid-connect/token" \
+            -H "Content-Type: application/x-www-form-urlencoded" \
+            -d "username=admin" \
+            -d "password=admin" \
+            -d "grant_type=password" \
+            -d "client_id=admin-cli" | jq -r '.access_token')
+          
+          if [ -z "$ADMIN_TOKEN" ] || [ "$ADMIN_TOKEN" = "null" ]; then
+            echo "Failed to authenticate as admin"
+            exit 1
+          fi
+          
+          echo "Admin authentication successful"
+          
+          # Test realm exists
+          REALM_INFO=$(curl -s -H "Authorization: Bearer ${ADMIN_TOKEN}" \
+            "http://localhost:8080/admin/realms/direito-lux")
+          
+          if echo "$REALM_INFO" | jq -e '.realm == "direito-lux"' > /dev/null; then
+            echo "Realm 'direito-lux' exists"
+          else
+            echo "Realm 'direito-lux' not found"
+            exit 1
+          fi
+
+      - name: Test load balancing
+        run: |
+          # Make multiple requests and check if they're distributed
+          for i in {1..10}; do
+            curl -s -o /dev/null -w "%{http_code} %{time_total}\n" http://localhost/health
+          done
+
+      - name: Export logs on failure
+        if: failure()
+        run: |
+          docker-compose logs > keycloak-logs.txt
+          
+      - name: Upload logs
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: keycloak-logs
+          path: keycloak-logs.txt
+
+      - name: Stop services
+        if: always()
+        run: |
+          docker-compose down -v

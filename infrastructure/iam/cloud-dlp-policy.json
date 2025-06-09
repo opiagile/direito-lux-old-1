@@ -1,0 +1,137 @@
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "DLPFullAccess",
+      "Effect": "Allow",
+      "Principal": {
+        "Service": "dlp.amazonaws.com"
+      },
+      "Action": [
+        "dlp:CreateDataIdentifier",
+        "dlp:DeleteDataIdentifier",
+        "dlp:DescribeDataIdentifier",
+        "dlp:ListDataIdentifiers",
+        "dlp:UpdateDataIdentifier",
+        "dlp:CreateDiscoveryJob",
+        "dlp:DescribeDiscoveryJob",
+        "dlp:ListDiscoveryJobs",
+        "dlp:CreateClassificationJob",
+        "dlp:DescribeClassificationJob",
+        "dlp:ListClassificationJobs",
+        "dlp:CreateFindingsFilter",
+        "dlp:DeleteFindingsFilter",
+        "dlp:GetFindingsFilter",
+        "dlp:ListFindingsFilters",
+        "dlp:UpdateFindingsFilter",
+        "dlp:GetFindings",
+        "dlp:ListFindings",
+        "dlp:CreateSampleFindings",
+        "dlp:GetFindingStatistics",
+        "dlp:GetUsageStatistics",
+        "dlp:GetUsageTotals",
+        "dlp:CreateInvitations",
+        "dlp:DeclineInvitations",
+        "dlp:DeleteInvitations",
+        "dlp:DescribeOrganizationConfiguration",
+        "dlp:EnableMacie",
+        "dlp:DisableMacie",
+        "dlp:UpdateMacieSession",
+        "dlp:GetMacieSession",
+        "dlp:TagResource",
+        "dlp:UntagResource",
+        "dlp:ListTagsForResource"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Sid": "S3BucketAccess",
+      "Effect": "Allow",
+      "Principal": {
+        "Service": "dlp.amazonaws.com"
+      },
+      "Action": [
+        "s3:GetObject",
+        "s3:ListBucket",
+        "s3:GetBucketLocation",
+        "s3:GetBucketPolicy",
+        "s3:GetBucketPolicyStatus",
+        "s3:GetBucketAcl",
+        "s3:GetBucketVersioning",
+        "s3:GetBucketTagging",
+        "s3:GetBucketLogging",
+        "s3:GetBucketEncryption",
+        "s3:GetBucketPublicAccessBlock",
+        "s3:GetBucketObjectLockConfiguration",
+        "s3:GetObjectVersion",
+        "s3:GetObjectVersionTagging",
+        "s3:GetObjectRetention",
+        "s3:GetObjectLegalHold",
+        "s3:GetObjectAcl",
+        "s3:GetObjectTagging"
+      ],
+      "Resource": [
+        "arn:aws:s3:::direito-lux-*",
+        "arn:aws:s3:::direito-lux-*/*"
+      ]
+    },
+    {
+      "Sid": "CloudWatchLogsAccess",
+      "Effect": "Allow",
+      "Principal": {
+        "Service": "dlp.amazonaws.com"
+      },
+      "Action": [
+        "logs:CreateLogGroup",
+        "logs:CreateLogStream",
+        "logs:PutLogEvents",
+        "logs:DescribeLogStreams"
+      ],
+      "Resource": "arn:aws:logs:*:*:log-group:/aws/macie/*"
+    },
+    {
+      "Sid": "KMSKeyAccess",
+      "Effect": "Allow",
+      "Principal": {
+        "Service": "dlp.amazonaws.com"
+      },
+      "Action": [
+        "kms:Decrypt",
+        "kms:DescribeKey",
+        "kms:GenerateDataKey"
+      ],
+      "Resource": "*",
+      "Condition": {
+        "StringEquals": {
+          "kms:ViaService": [
+            "s3.*.amazonaws.com"
+          ]
+        }
+      }
+    },
+    {
+      "Sid": "EventBridgeAccess",
+      "Effect": "Allow",
+      "Principal": {
+        "Service": "dlp.amazonaws.com"
+      },
+      "Action": [
+        "events:PutTargets",
+        "events:PutRule",
+        "events:DescribeRule"
+      ],
+      "Resource": "arn:aws:events:*:*:rule/MacieAutoEnableRule*"
+    },
+    {
+      "Sid": "SNSPublishAccess",
+      "Effect": "Allow",
+      "Principal": {
+        "Service": "dlp.amazonaws.com"
+      },
+      "Action": [
+        "sns:Publish"
+      ],
+      "Resource": "arn:aws:sns:*:*:direito-lux-dlp-findings"
+    }
+  ]
+}

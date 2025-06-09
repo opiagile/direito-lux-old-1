@@ -1,0 +1,140 @@
+{
+  "dataIdentifiers": [
+    {
+      "name": "BRAZILIAN_CPF",
+      "description": "Brazilian CPF (Cadastro de Pessoas Físicas)",
+      "regex": "\\b\\d{3}\\.\\d{3}\\.\\d{3}-\\d{2}\\b|\\b\\d{11}\\b",
+      "keywords": ["cpf", "cadastro de pessoas físicas"],
+      "ignoreWords": [],
+      "maximumMatchDistance": 50,
+      "severity": "HIGH",
+      "tags": {
+        "type": "PII",
+        "country": "BR"
+      }
+    },
+    {
+      "name": "BRAZILIAN_CNPJ",
+      "description": "Brazilian CNPJ (Cadastro Nacional da Pessoa Jurídica)",
+      "regex": "\\b\\d{2}\\.\\d{3}\\.\\d{3}/\\d{4}-\\d{2}\\b|\\b\\d{14}\\b",
+      "keywords": ["cnpj", "cadastro nacional da pessoa jurídica"],
+      "ignoreWords": [],
+      "maximumMatchDistance": 50,
+      "severity": "HIGH",
+      "tags": {
+        "type": "BUSINESS",
+        "country": "BR"
+      }
+    },
+    {
+      "name": "BRAZILIAN_RG",
+      "description": "Brazilian RG (Registro Geral)",
+      "regex": "\\b\\d{1,2}\\.\\d{3}\\.\\d{3}-[0-9X]\\b|\\b\\d{7,9}\\b",
+      "keywords": ["rg", "registro geral", "identidade"],
+      "ignoreWords": [],
+      "maximumMatchDistance": 50,
+      "severity": "HIGH",
+      "tags": {
+        "type": "PII",
+        "country": "BR"
+      }
+    },
+    {
+      "name": "OAB_NUMBER",
+      "description": "OAB (Ordem dos Advogados do Brasil) Registration Number",
+      "regex": "\\b[A-Z]{2}\\s?\\d{4,6}\\b|\\bOAB[:/\\s-]?[A-Z]{2}\\s?\\d{4,6}\\b",
+      "keywords": ["oab", "ordem dos advogados"],
+      "ignoreWords": [],
+      "maximumMatchDistance": 30,
+      "severity": "MEDIUM",
+      "tags": {
+        "type": "PROFESSIONAL",
+        "country": "BR"
+      }
+    },
+    {
+      "name": "LEGAL_PROCESS_NUMBER",
+      "description": "Brazilian Legal Process Number (CNJ format)",
+      "regex": "\\b\\d{7}-\\d{2}\\.\\d{4}\\.\\d\\.\\d{2}\\.\\d{4}\\b",
+      "keywords": ["processo", "autos", "número do processo"],
+      "ignoreWords": [],
+      "maximumMatchDistance": 50,
+      "severity": "MEDIUM",
+      "tags": {
+        "type": "LEGAL",
+        "country": "BR"
+      }
+    },
+    {
+      "name": "BANK_ACCOUNT_BR",
+      "description": "Brazilian Bank Account Information",
+      "regex": "\\b(conta|cc|c/c)[:\\s-]?\\d{4,8}[-\\s]?\\d{1}\\b|\\b(agência|ag)[:\\s-]?\\d{3,4}[-\\s]?\\d{0,1}\\b",
+      "keywords": ["conta corrente", "conta bancária", "agência", "banco"],
+      "ignoreWords": [],
+      "maximumMatchDistance": 50,
+      "severity": "HIGH",
+      "tags": {
+        "type": "FINANCIAL",
+        "country": "BR"
+      }
+    },
+    {
+      "name": "LEGAL_CONFIDENTIAL_TERMS",
+      "description": "Legal confidential terms and attorney-client privilege markers",
+      "regex": "\\b(confidencial|sigilo profissional|segredo de justiça|privilegiado|attorney-client privilege)\\b",
+      "keywords": ["confidencial", "sigilo", "privilegiado", "segredo"],
+      "ignoreWords": [],
+      "maximumMatchDistance": 100,
+      "severity": "HIGH",
+      "tags": {
+        "type": "CONFIDENTIAL",
+        "category": "LEGAL"
+      }
+    }
+  ],
+  "findingsConfiguration": {
+    "defaultClassification": {
+      "status": "ENABLED",
+      "sensitiveDataDiscoveryEnabled": true
+    },
+    "samplingPercentage": 100,
+    "includePatterns": [
+      "*.pdf",
+      "*.doc",
+      "*.docx",
+      "*.txt",
+      "*.rtf",
+      "*.odt"
+    ],
+    "excludePatterns": [
+      "*/temp/*",
+      "*/tmp/*",
+      "*/cache/*"
+    ]
+  },
+  "alertingConfiguration": {
+    "findingSeverityThreshold": "MEDIUM",
+    "suppressionRules": [
+      {
+        "name": "IgnoreTestData",
+        "criterion": {
+          "path": {
+            "operator": "CONTAINS",
+            "values": ["test", "mock", "sample"]
+          }
+        }
+      }
+    ],
+    "notifications": {
+      "email": {
+        "enabled": true,
+        "recipients": ["security@direitolux.com"],
+        "severityFilter": ["HIGH", "CRITICAL"]
+      },
+      "sns": {
+        "enabled": true,
+        "topicArn": "arn:aws:sns:*:*:direito-lux-dlp-findings"
+      }
+    }
+  }
+}
