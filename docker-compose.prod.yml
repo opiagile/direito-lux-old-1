@@ -1,9 +1,12 @@
+# Docker Compose para PRODUÇÃO/HOMOLOGAÇÃO/DEMO
+# Tudo containerizado: API Go + Infraestrutura
+
 version: '3.8'
 
 services:
   postgres:
     image: postgres:16-alpine
-    container_name: keycloak-postgres
+    container_name: direito-lux-postgres
     environment:
       POSTGRES_DB: keycloak
       POSTGRES_USER: keycloak
@@ -11,7 +14,7 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
     networks:
-      - keycloak-network
+      - direito-lux-network
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U keycloak"]
       interval: 10s
@@ -20,12 +23,12 @@ services:
 
   redis:
     image: redis:7-alpine
-    container_name: keycloak-redis
+    container_name: direito-lux-redis
     command: redis-server --appendonly yes
     volumes:
       - redis_data:/data
     networks:
-      - keycloak-network
+      - direito-lux-network
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 10s
@@ -34,7 +37,7 @@ services:
 
   keycloak-1:
     image: quay.io/keycloak/keycloak:26.0
-    container_name: keycloak-1
+    container_name: direito-lux-keycloak-1
     environment:
       KC_DB: postgres
       KC_DB_URL: jdbc:postgresql://postgres:5432/keycloak
@@ -65,7 +68,7 @@ services:
       redis:
         condition: service_healthy
     networks:
-      - keycloak-network
+      - direito-lux-network
     healthcheck:
       test: ["CMD-SHELL", "nc -z localhost 8080 || exit 1"]
       interval: 30s
@@ -74,7 +77,7 @@ services:
 
   keycloak-2:
     image: quay.io/keycloak/keycloak:26.0
-    container_name: keycloak-2
+    container_name: direito-lux-keycloak-2
     environment:
       KC_DB: postgres
       KC_DB_URL: jdbc:postgresql://postgres:5432/keycloak
@@ -105,9 +108,9 @@ services:
       keycloak-1:
         condition: service_started
     networks:
-      - keycloak-network
+      - direito-lux-network
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8080/health/ready"]
+      test: ["CMD-SHELL", "nc -z localhost 8080 || exit 1"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -128,12 +131,19 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
+      keycloak-1:
+        condition: service_started
     networks:
-      - keycloak-network
+      - direito-lux-network
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:9001/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
 
   nginx:
     image: nginx:alpine
-    container_name: keycloak-nginx
+    container_name: direito-lux-nginx
     ports:
       - "80:80"
       - "443:443"
@@ -145,12 +155,12 @@ services:
       - keycloak-2
       - direito-lux-api
     networks:
-      - keycloak-network
+      - direito-lux-network
 
 volumes:
   postgres_data:
   redis_data:
 
 networks:
-  keycloak-network:
+  direito-lux-network:
     driver: bridge

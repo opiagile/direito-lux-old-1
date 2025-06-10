@@ -1,0 +1,38 @@
+server:
+  port: "9000"
+  mode: "debug"
+  readTimeout: "15s"
+  writeTimeout: "15s"
+
+database:
+  host: "localhost"
+  port: "5432"
+  user: "keycloak"
+  password: "keycloak"
+  dbname: "direito_lux"
+  sslmode: "disable"
+
+redis:
+  host: "localhost"
+  port: "6379"
+  password: ""
+  db: 1
+  poolSize: 10
+  minIdleConns: 5
+
+keycloak:
+  baseURL: "http://localhost:8080"
+  realm: "direito-lux"
+  clientID: "direito-lux-app"
+  clientSecret: "PBaNyvNLoJSCmW0VaxuQtE4VZGJhqPtF"
+  adminUser: "admin"
+  adminPass: "admin"
+
+jwt:
+  cacheDuration: "5m"
+  clockSkewLeeway: "5m"
+
+logger:
+  level: "info"
+  encoding: "console"
+  outputPath: "stdout"

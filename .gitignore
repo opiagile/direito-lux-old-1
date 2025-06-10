@@ -94,3 +94,9 @@ yarn-error.log*
 uploads/
 downloads/
 data/
+
+# Environment specific configs
+config.local.yaml
+
+# IDE specific
+*.code-workspace
