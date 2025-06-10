@@ -1,46 +1,21 @@
 # OPA Configuration for Direito Lux
-services:
-  - name: "direito-lux"
-    url: "http://direito-lux-api:9001"
-    
-bundles:
-  authz:
-    resource: "/policies/direito-lux.rego"
-    persist: true
-    polling:
-      min_delay_seconds: 10
-      max_delay_seconds: 20
 
 decision_logs:
   console: true
-  reporting:
-    min_delay_seconds: 5
-    max_delay_seconds: 10
 
 status:
   console: true
 
-plugins:
-  envoy_ext_authz_grpc:
-    addr: :9191
-    enable_reflection: true
-    
-server:
-  encoding:
-    gzip:
-      min_length: 1024
-      compression_level: 6
+# Health check configuration
+health:
+  enabled: true
 
-# Data sources for policies
-labels:
-  app: "direito-lux"
-  version: "v1"
-  
 # Performance tuning
 caching:
   inter_query_builtin_cache:
     max_size_bytes: 10000000
 
-# Health check configuration
-health:
-  enabled: true
+# Data sources for policies
+labels:
+  app: "direito-lux"
+  version: "v1"

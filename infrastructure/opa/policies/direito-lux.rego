@@ -227,14 +227,22 @@ feature_allowed if {
 # Generate detailed denial reasons
 denial_reason := reason if {
     not allow
-    reasons := [
-        ["tenant_isolation", "Access denied: resource belongs to different tenant"] | tenant_isolation_violated,
-        ["rate_limit", "Rate limit exceeded for your plan"] | rate_limit_exceeded,
-        ["insufficient_role", "Your role does not have permission for this action"] | not role_has_permission,
-        ["ip_restricted", "Access denied from this IP address"] | not ip_allowed,
-        ["time_window", "Access outside allowed time window"] | not time_window_valid,
-        ["feature_disabled", "This feature is not available in your plan"] | not feature_allowed
-    ]
+    reasons := array.concat(
+        [["tenant_isolation", "Access denied: resource belongs to different tenant"] | tenant_isolation_violated],
+        array.concat(
+            [["rate_limit", "Rate limit exceeded for your plan"] | rate_limit_exceeded],
+            array.concat(
+                [["insufficient_role", "Your role does not have permission for this action"] | role_has_permission == false],
+                array.concat(
+                    [["ip_restricted", "Access denied from this IP address"] | ip_allowed == false],
+                    array.concat(
+                        [["time_window", "Access outside allowed time window"] | time_window_valid == false],
+                        [["feature_disabled", "This feature is not available in your plan"] | feature_allowed == false]
+                    )
+                )
+            )
+        )
+    )
     reason := concat(", ", [r[1] | r := reasons[_]; r[0]])
 }
 

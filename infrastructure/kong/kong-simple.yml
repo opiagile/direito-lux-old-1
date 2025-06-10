@@ -1,0 +1,59 @@
+_format_version: "3.0"
+
+services:
+  # Demo API Service
+  - name: demo-api
+    url: http://host.docker.internal:9001
+    tags:
+      - demo
+
+    routes:
+      # Health check route
+      - name: health
+        paths:
+          - /health
+        strip_path: false
+        tags:
+          - health
+
+      # API routes
+      - name: api
+        paths:
+          - /api
+        strip_path: false
+        tags:
+          - api
+
+      # Root route
+      - name: root
+        paths:
+          - /
+        strip_path: false
+        tags:
+          - root
+
+# Global plugins
+plugins:
+  # Request ID generation
+  - name: correlation-id
+    config:
+      header_name: X-Request-ID
+      generator: uuid
+      echo_downstream: true
+
+  # CORS
+  - name: cors
+    config:
+      origins:
+        - "*"
+      methods:
+        - GET
+        - POST
+        - PUT
+        - DELETE
+        - OPTIONS
+      headers:
+        - Accept
+        - Content-Type
+        - Authorization
+      credentials: true
