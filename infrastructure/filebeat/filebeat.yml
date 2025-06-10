@@ -1,0 +1,31 @@
+filebeat.inputs:
+- type: container
+  paths:
+    - '/var/lib/docker/containers/*/*.log'
+  processors:
+    - add_docker_metadata:
+        host: "unix:///var/run/docker.sock"
+
+- type: log
+  enabled: true
+  paths:
+    - /var/log/direito-lux/*.log
+  fields:
+    service: direito-lux
+    module: consulta
+  fields_under_root: true
+
+processors:
+- add_host_metadata:
+    when.not.contains.tags: forwarded
+
+output.logstash:
+  hosts: ["logstash:5044"]
+
+logging.level: info
+logging.to_files: true
+logging.files:
+  path: /var/log/filebeat
+  name: filebeat
+  keepfiles: 7
+  permissions: 0644

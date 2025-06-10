@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
 	"github.com/opiagile/direito-lux/internal/authorization"
 	"github.com/opiagile/direito-lux/internal/domain"
 	"github.com/opiagile/direito-lux/pkg/logger"
@@ -375,8 +376,8 @@ func isSensitiveHeader(header string) bool {
 // logAuditTrail logs authorization events that require auditing
 func logAuditTrail(db *gorm.DB, input authorization.AuthzInput, result *authorization.AuthzResult) {
 	audit := &domain.AuditLog{
-		TenantID:  input.User.TenantID,
-		UserID:    input.User.ID,
+		TenantID:  uuid.MustParse(input.User.TenantID),
+		UserID:    uuid.MustParse(input.User.ID),
 		Action:    input.Action,
 		Resource:  input.Resource.Type,
 		ResourceID: input.Resource.ID,

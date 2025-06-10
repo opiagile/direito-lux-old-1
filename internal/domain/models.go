@@ -196,3 +196,83 @@ type APIKey struct {
 	LastUsedAt  *time.Time `json:"last_used_at,omitempty"`
 	IsActive    bool       `gorm:"default:true" json:"is_active"`
 }
+
+// === MÓDULO 3 - CONSULTA JURÍDICA ===
+
+// ConsultaProcesso representa uma consulta de processo judicial
+type ConsultaProcesso struct {
+	ID              string           `json:"id"`
+	NumeroProcesso  string           `json:"numero_processo"`
+	Tribunal        string           `json:"tribunal"`
+	Status          string           `json:"status"`
+	DataConsulta    time.Time        `json:"data_consulta"`
+	Processo        *ProcessoJudicial `json:"processo,omitempty"`
+}
+
+// ProcessoJudicial representa um processo judicial
+type ProcessoJudicial struct {
+	Numero        string          `json:"numero"`
+	Tribunal      string          `json:"tribunal"`
+	Classe        string          `json:"classe"`
+	Assunto       string          `json:"assunto"`
+	Status        string          `json:"status"`
+	DataAutuacao  time.Time       `json:"data_autuacao"`
+	Partes        []Parte         `json:"partes"`
+	Movimentacoes []Movimentacao  `json:"movimentacoes"`
+}
+
+// Parte representa uma parte do processo
+type Parte struct {
+	Nome string `json:"nome"`
+	Tipo string `json:"tipo"` // Autor, Réu, etc.
+}
+
+// Movimentacao representa uma movimentação processual
+type Movimentacao struct {
+	Data      time.Time `json:"data"`
+	Descricao string    `json:"descricao"`
+	Tipo      string    `json:"tipo"`
+}
+
+// ConsultaLegislacao representa uma consulta de legislação
+type ConsultaLegislacao struct {
+	ID           string    `json:"id"`
+	Tema         string    `json:"tema"`
+	Jurisdicao   string    `json:"jurisdicao"`
+	Status       string    `json:"status"`
+	DataConsulta time.Time `json:"data_consulta"`
+	Leis         []*Lei    `json:"leis,omitempty"`
+}
+
+// Lei representa uma lei ou norma jurídica
+type Lei struct {
+	ID             string    `json:"id"`
+	Numero         string    `json:"numero"`
+	Nome           string    `json:"nome"`
+	Ementa         string    `json:"ementa"`
+	DataPublicacao time.Time `json:"data_publicacao"`
+	Jurisdicao     string    `json:"jurisdicao"`
+	Status         string    `json:"status"`
+}
+
+// ConsultaJurisprudencia representa uma consulta de jurisprudência
+type ConsultaJurisprudencia struct {
+	ID           string     `json:"id"`
+	Tema         string     `json:"tema"`
+	Tribunal     string     `json:"tribunal"`
+	Status       string     `json:"status"`
+	DataConsulta time.Time  `json:"data_consulta"`
+	Decisoes     []*Decisao `json:"decisoes,omitempty"`
+}
+
+// Decisao representa uma decisão judicial
+type Decisao struct {
+	ID             string    `json:"id"`
+	Tribunal       string    `json:"tribunal"`
+	Numero         string    `json:"numero"`
+	Relator        string    `json:"relator"`
+	DataJulgamento time.Time `json:"data_julgamento"`
+	Ementa         string    `json:"ementa"`
+	Resultado      string    `json:"resultado"`
+	Tema           string    `json:"tema"`
+}

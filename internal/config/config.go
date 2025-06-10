@@ -9,12 +9,13 @@ import (
 )
 
 type Config struct {
-	Server   ServerConfig
-	Database DatabaseConfig
-	Redis    RedisConfig
-	Keycloak KeycloakConfig
-	JWT      JWTConfig
-	Logger   LoggerConfig
+	Server         ServerConfig
+	Database       DatabaseConfig
+	Redis          RedisConfig
+	Keycloak       KeycloakConfig
+	JWT            JWTConfig
+	Logger         LoggerConfig
+	ConsultaService ConsultaServiceConfig
 }
 
 type ServerConfig struct {
@@ -61,6 +62,10 @@ type LoggerConfig struct {
 	Level      string
 	Encoding   string // json or console
 	OutputPath string
+}
+
+type ConsultaServiceConfig struct {
+	Port string
 }
 
 func Load() (*Config, error) {
@@ -125,6 +130,9 @@ func setDefaults() {
 	viper.SetDefault("logger.level", "info")
 	viper.SetDefault("logger.encoding", "json")
 	viper.SetDefault("logger.outputPath", "stdout")
+	
+	// Consulta Service defaults
+	viper.SetDefault("consultaService.port", "9002")
 }
 
 func (c *Config) GetDSN() string {
@@ -144,4 +152,22 @@ func (c *Config) GetRedisAddr() string {
 
 func (c *Config) IsProduction() bool {
 	return c.Server.Mode == "release" || os.Getenv("GIN_MODE") == "release"
+}
+
+// LoadConfig loads configuration with defaults for consulta service
+func LoadConfig() *Config {
+	config, err := Load()
+	if err != nil {
+		// Return default config if file doesn't exist
+		return &Config{
+			Logger: LoggerConfig{
+				Level:    "info",
+				Encoding: "json",
+			},
+			ConsultaService: ConsultaServiceConfig{
+				Port: "9002",
+			},
+		}
+	}
+	return config
 }

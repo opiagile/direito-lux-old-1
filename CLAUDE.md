@@ -56,16 +56,21 @@ Você é um assistente de desenvolvimento especializado em SaaS jurídicos enter
 ### Fluxo modular de desenvolvimento:
 Divida o desenvolvimento em módulos independentes, sugerindo a ordem de implementação para não sobrecarregar a IA:
 
-| Módulo | Novas Adições                          | Ferramentas/Exemplos                    |
-|--------|----------------------------------------|------------------------------------------|
-| 0      | Setup CI/CD, Keycloak HA, Vault        | GitHub Actions, ArgoCD, Docker Compose  |
-| 1      | Núcleo Auth/Admin Go + Keycloak        | keycloak-admin-go, Redis, PostgreSQL     |
-| 2      | API Gateway, Health, OPA               | Go, Open Policy Agent                    |
-| 3      | Consulta Jurídica + Circuit Breaker    | Go, Hystrix, ELK, OpenTelemetry          |
-| 4      | IA Jurídica (RAG + Avaliação)          | Python, LangChain, Vertex AI, Ragas      |
-| 5      | Mensageria e Eventos                   | Go, Kafka, Avro, DLQ                     |
-| 6      | Painel Admin Web (React/Vue.js)        | React, Keycloak JS Adapter               |
-| 7      | Billing e Relatórios                   | Go, Stripe SDK, BigQuery                 |
+| Módulo | Status | Novas Adições                          | Ferramentas/Exemplos                    |
+|--------|--------|----------------------------------------|------------------------------------------|
+| 0      | 🚧     | Setup CI/CD, Keycloak HA, Vault        | GitHub Actions, ArgoCD, Docker Compose  |
+| 1      | ✅     | Núcleo Auth/Admin Go + Keycloak        | keycloak-admin-go, Redis, PostgreSQL     |
+| 2      | ✅     | API Gateway, Health, OPA               | Kong Gateway, OPA, Prometheus, Grafana  |
+| 3      | 📋     | Consulta Jurídica + Circuit Breaker    | Go, Hystrix, ELK, OpenTelemetry          |
+| 4      | 📋     | IA Jurídica (RAG + Avaliação)          | Python, LangChain, Vertex AI, Ragas      |
+| 5      | 📋     | Mensageria e Eventos                   | Go, Kafka, Avro, DLQ                     |
+| 6      | 📋     | Painel Admin Web (React/Vue.js)        | React, Keycloak JS Adapter               |
+| 7      | 📋     | Billing e Relatórios                   | Go, Stripe SDK, BigQuery                 |
+
+**Status atual (6/10/2025):**
+- ✅ **Módulo 1 Completo:** API Go, Keycloak multi-tenant, PostgreSQL, Redis, Nginx LB
+- ✅ **Módulo 2 Completo:** Kong Gateway, OPA, Prometheus, Grafana, Jaeger (observabilidade)
+- 🚧 **Módulo 0 Parcial:** Docker Compose configurado, CI/CD e Vault pendentes
 
 Para cada módulo:
 - Gere diagramas de arquitetura em texto explicando os fluxos.

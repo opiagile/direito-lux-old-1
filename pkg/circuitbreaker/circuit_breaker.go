@@ -51,8 +51,8 @@ type Counts struct {
 	ConsecutiveFailures  uint32
 }
 
-// CircuitBreaker implements the circuit breaker pattern
-type CircuitBreaker struct {
+// CircuitBreakerInternal implements the circuit breaker pattern
+type CircuitBreakerInternal struct {
 	name          string
 	maxRequests   uint32
 	interval      time.Duration
@@ -67,9 +67,9 @@ type CircuitBreaker struct {
 	expiry     time.Time
 }
 
-// NewCircuitBreaker creates a new circuit breaker
-func NewCircuitBreaker(st Settings) *CircuitBreaker {
-	cb := &CircuitBreaker{
+// NewCircuitBreakerInternal creates a new circuit breaker
+func NewCircuitBreakerInternal(st Settings) *CircuitBreakerInternal {
+	cb := &CircuitBreakerInternal{
 		name:          st.Name,
 		maxRequests:   st.MaxRequests,
 		interval:      st.Interval,
@@ -114,7 +114,7 @@ func defaultOnStateChange(name string, from, to State) {
 }
 
 // Execute runs the given request if the circuit breaker accepts it
-func (cb *CircuitBreaker) Execute(ctx context.Context, req func() (interface{}, error)) (interface{}, error) {
+func (cb *CircuitBreakerInternal) Execute(ctx context.Context, req func() (interface{}, error)) (interface{}, error) {
 	generation, err := cb.beforeRequest()
 	if err != nil {
 		return nil, err
@@ -149,7 +149,7 @@ func (cb *CircuitBreaker) Execute(ctx context.Context, req func() (interface{}, 
 }
 
 // State returns the current state of the circuit breaker
-func (cb *CircuitBreaker) State() State {
+func (cb *CircuitBreakerInternal) State() State {
 	cb.mutex.Lock()
 	defer cb.mutex.Unlock()
 
@@ -159,7 +159,7 @@ func (cb *CircuitBreaker) State() State {
 }
 
 // Counts returns the current counts
-func (cb *CircuitBreaker) Counts() Counts {
+func (cb *CircuitBreakerInternal) Counts() Counts {
 	cb.mutex.Lock()
 	defer cb.mutex.Unlock()
 
@@ -167,14 +167,14 @@ func (cb *CircuitBreaker) Counts() Counts {
 }
 
 // Reset resets the circuit breaker
-func (cb *CircuitBreaker) Reset() {
+func (cb *CircuitBreakerInternal) Reset() {
 	cb.mutex.Lock()
 	defer cb.mutex.Unlock()
 
 	cb.toNewGeneration(time.Now())
 }
 
-func (cb *CircuitBreaker) beforeRequest() (uint64, error) {
+func (cb *CircuitBreakerInternal) beforeRequest() (uint64, error) {
 	cb.mutex.Lock()
 	defer cb.mutex.Unlock()
 
@@ -198,7 +198,7 @@ func (cb *CircuitBreaker) beforeRequest() (uint64, error) {
 	return generation, nil
 }
 
-func (cb *CircuitBreaker) afterRequest(before uint64, success bool) {
+func (cb *CircuitBreakerInternal) afterRequest(before uint64, success bool) {
 	cb.mutex.Lock()
 	defer cb.mutex.Unlock()
 
@@ -215,7 +215,7 @@ func (cb *CircuitBreaker) afterRequest(before uint64, success bool) {
 	}
 }
 
-func (cb *CircuitBreaker) onSuccess(state State, now time.Time) {
+func (cb *CircuitBreakerInternal) onSuccess(state State, now time.Time) {
 	switch state {
 	case StateClosed:
 		cb.counts.TotalSuccesses++
@@ -230,7 +230,7 @@ func (cb *CircuitBreaker) onSuccess(state State, now time.Time) {
 	}
 }
 
-func (cb *CircuitBreaker) onFailure(state State, now time.Time) {
+func (cb *CircuitBreakerInternal) onFailure(state State, now time.Time) {
 	switch state {
 	case StateClosed:
 		cb.counts.TotalFailures++
@@ -245,7 +245,7 @@ func (cb *CircuitBreaker) onFailure(state State, now time.Time) {
 	}
 }
 
-func (cb *CircuitBreaker) currentState(now time.Time) (State, uint64) {
+func (cb *CircuitBreakerInternal) currentState(now time.Time) (State, uint64) {
 	switch cb.state {
 	case StateClosed:
 		if !cb.expiry.IsZero() && cb.expiry.Before(now) {
@@ -259,7 +259,7 @@ func (cb *CircuitBreaker) currentState(now time.Time) (State, uint64) {
 	return cb.state, cb.generation
 }
 
-func (cb *CircuitBreaker) setState(state State, now time.Time) {
+func (cb *CircuitBreakerInternal) setState(state State, now time.Time) {
 	if cb.state == state {
 		return
 	}
@@ -274,7 +274,7 @@ func (cb *CircuitBreaker) setState(state State, now time.Time) {
 	}
 }
 
-func (cb *CircuitBreaker) toNewGeneration(now time.Time) {
+func (cb *CircuitBreakerInternal) toNewGeneration(now time.Time) {
 	cb.generation++
 	cb.counts = Counts{}
 
@@ -317,19 +317,19 @@ func (e ErrTooManyRequests) Error() string {
 
 // Manager manages multiple circuit breakers
 type Manager struct {
-	breakers map[string]*CircuitBreaker
+	breakers map[string]*CircuitBreakerInternal
 	mutex    sync.RWMutex
 }
 
 // NewManager creates a new circuit breaker manager
 func NewManager() *Manager {
 	return &Manager{
-		breakers: make(map[string]*CircuitBreaker),
+		breakers: make(map[string]*CircuitBreakerInternal),
 	}
 }
 
 // Get returns a circuit breaker by name, creating it if it doesn't exist
-func (m *Manager) Get(name string) *CircuitBreaker {
+func (m *Manager) Get(name string) *CircuitBreakerInternal {
 	m.mutex.RLock()
 	cb, exists := m.breakers[name]
 	m.mutex.RUnlock()
@@ -347,7 +347,7 @@ func (m *Manager) Get(name string) *CircuitBreaker {
 		return cb
 	}
 
-	cb = NewCircuitBreaker(Settings{
+	cb = NewCircuitBreakerInternal(Settings{
 		Name:        name,
 		MaxRequests: 3,
 		Interval:    10 * time.Second,
