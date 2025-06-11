@@ -175,7 +175,7 @@ jobs:
 
       - name: Build application
         run: |
-          go build -ldflags="-s -w" -o bin/direito-lux ./cmd/server
+          go build -ldflags="-s -w" -o bin/direito-lux ./cmd/api
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
