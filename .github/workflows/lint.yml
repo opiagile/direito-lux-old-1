@@ -36,4 +36,5 @@ jobs:
       - name: Run basic checks
         run: |
           go mod verify
-          go mod tidy -diff
+          go mod tidy
+          git diff --exit-code go.mod go.sum
