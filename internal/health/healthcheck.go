@@ -37,11 +37,11 @@ type Check struct {
 
 // Response represents the overall health response
 type Response struct {
-	Status     Status              `json:"status"`
-	Version    string              `json:"version"`
-	Timestamp  time.Time           `json:"timestamp"`
-	Checks     []Check             `json:"checks"`
-	TotalTime  time.Duration       `json:"total_duration_ms"`
+	Status     Status                 `json:"status"`
+	Version    string                 `json:"version"`
+	Timestamp  time.Time              `json:"timestamp"`
+	Checks     []Check                `json:"checks"`
+	TotalTime  time.Duration          `json:"total_duration_ms"`
 	SystemInfo map[string]interface{} `json:"system_info"`
 }
 
@@ -52,11 +52,11 @@ type Checker interface {
 
 // Handler manages health checks
 type Handler struct {
-	version        string
-	checkers       map[string]Checker
-	mu             sync.RWMutex
-	cache          *redis.Client
-	cacheDuration  time.Duration
+	version       string
+	checkers      map[string]Checker
+	mu            sync.RWMutex
+	cache         *redis.Client
+	cacheDuration time.Duration
 }
 
 // NewHandler creates a new health check handler
@@ -81,7 +81,7 @@ func (h *Handler) HealthCheckHandler() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		ctx := c.Request.Context()
 		verbose := c.Query("verbose") == "true"
-		
+
 		// Check cache first for non-verbose requests
 		if !verbose && h.cache != nil {
 			if cached, err := h.getFromCache(ctx); err == nil {
@@ -91,7 +91,7 @@ func (h *Handler) HealthCheckHandler() gin.HandlerFunc {
 		}
 
 		response := h.performHealthChecks(ctx, verbose)
-		
+
 		// Cache the response
 		if h.cache != nil && response.Status == StatusHealthy {
 			h.cacheResponse(ctx, response)
@@ -113,7 +113,7 @@ func (h *Handler) HealthCheckHandler() gin.HandlerFunc {
 func (h *Handler) LivenessHandler() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		c.JSON(http.StatusOK, gin.H{
-			"status": "alive",
+			"status":    "alive",
 			"timestamp": time.Now(),
 		})
 	}
@@ -123,20 +123,20 @@ func (h *Handler) LivenessHandler() gin.HandlerFunc {
 func (h *Handler) ReadinessHandler() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		ctx := c.Request.Context()
-		
+
 		// Quick readiness checks
 		checks := []Check{}
 		overallStatus := StatusHealthy
 
 		// Check critical components only
 		criticalCheckers := []string{"database", "keycloak", "redis"}
-		
+
 		h.mu.RLock()
 		for _, name := range criticalCheckers {
 			if checker, exists := h.checkers[name]; exists {
 				check := checker.Check(ctx)
 				checks = append(checks, check)
-				
+
 				if check.Status == StatusUnhealthy {
 					overallStatus = StatusUnhealthy
 				}
@@ -150,9 +150,9 @@ func (h *Handler) ReadinessHandler() gin.HandlerFunc {
 		}
 
 		c.JSON(statusCode, gin.H{
-			"ready": overallStatus == StatusHealthy,
-			"status": overallStatus,
-			"checks": checks,
+			"ready":     overallStatus == StatusHealthy,
+			"status":    overallStatus,
+			"checks":    checks,
 			"timestamp": time.Now(),
 		})
 	}
@@ -192,7 +192,7 @@ func (h *Handler) performHealthChecks(ctx context.Context, verbose bool) Respons
 	// Collect results
 	for check := range checkChan {
 		checks = append(checks, check)
-		
+
 		// Determine overall status
 		if check.Status == StatusUnhealthy {
 			overallStatus = StatusUnhealthy
@@ -254,11 +254,11 @@ func NewDatabaseChecker(db *gorm.DB) *DatabaseChecker {
 
 func (d *DatabaseChecker) Check(ctx context.Context) Check {
 	start := time.Now()
-	
+
 	// Simple query to check connection
 	var result int
 	err := d.db.WithContext(ctx).Raw("SELECT 1").Scan(&result).Error
-	
+
 	status := StatusHealthy
 	message := "Database is healthy"
 	details := make(map[string]interface{})
@@ -298,10 +298,10 @@ func NewRedisChecker(client *redis.Client) *RedisChecker {
 
 func (r *RedisChecker) Check(ctx context.Context) Check {
 	start := time.Now()
-	
+
 	// Ping Redis
 	_, err := r.client.Ping(ctx).Result()
-	
+
 	status := StatusHealthy
 	message := "Redis is healthy"
 	details := make(map[string]interface{})
@@ -315,7 +315,7 @@ func (r *RedisChecker) Check(ctx context.Context) Check {
 		if info != "" {
 			details["info"] = "available"
 		}
-		
+
 		// Get pool stats
 		poolStats := r.client.PoolStats()
 		details["total_conns"] = poolStats.TotalConns
@@ -347,10 +347,10 @@ func NewKeycloakChecker(client *auth.KeycloakClient, baseURL string) *KeycloakCh
 
 func (k *KeycloakChecker) Check(ctx context.Context) Check {
 	start := time.Now()
-	
+
 	// Try to get public key (lightweight operation)
 	_, err := k.keycloakClient.GetPublicKey(ctx)
-	
+
 	status := StatusHealthy
 	message := "Keycloak is healthy"
 	details := map[string]interface{}{

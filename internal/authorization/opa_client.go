@@ -35,18 +35,18 @@ type AuthzRequest struct {
 
 // AuthzInput contains all the context for authorization decision
 type AuthzInput struct {
-	User         User                   `json:"user"`
-	Resource     Resource               `json:"resource"`
-	Action       string                 `json:"action"`
-	Method       string                 `json:"method"`
-	Path         []string               `json:"path"`
-	PathParams   map[string]string      `json:"path_params"`
-	QueryParams  map[string]string      `json:"query_params"`
-	Headers      map[string]string      `json:"headers"`
-	ClientIP     string                 `json:"client_ip"`
-	APIKey       string                 `json:"api_key,omitempty"`
-	Context      string                 `json:"context,omitempty"`
-	Feature      string                 `json:"feature,omitempty"`
+	User        User              `json:"user"`
+	Resource    Resource          `json:"resource"`
+	Action      string            `json:"action"`
+	Method      string            `json:"method"`
+	Path        []string          `json:"path"`
+	PathParams  map[string]string `json:"path_params"`
+	QueryParams map[string]string `json:"query_params"`
+	Headers     map[string]string `json:"headers"`
+	ClientIP    string            `json:"client_ip"`
+	APIKey      string            `json:"api_key,omitempty"`
+	Context     string            `json:"context,omitempty"`
+	Feature     string            `json:"feature,omitempty"`
 }
 
 // User represents user context for OPA
@@ -62,20 +62,20 @@ type User struct {
 
 // Resource represents the resource being accessed
 type Resource struct {
-	Type         string                 `json:"type"`
-	ID           string                 `json:"id"`
-	TenantID     string                 `json:"tenant_id"`
-	OwnerID      string                 `json:"owner_id,omitempty"`
-	ClientID     string                 `json:"client_id,omitempty"`
-	SharedWith   []string               `json:"shared_with,omitempty"`
-	Visibility   string                 `json:"visibility,omitempty"`
-	Classification string               `json:"classification,omitempty"`
-	ContainsPII  bool                   `json:"contains_pii,omitempty"`
-	CanBeDeleted bool                   `json:"can_be_deleted,omitempty"`
-	AssignedUsers []string              `json:"assigned_users,omitempty"`
-	AccessStartTime string              `json:"access_start_time,omitempty"`
-	AccessEndTime   string              `json:"access_end_time,omitempty"`
-	Metadata     map[string]interface{} `json:"metadata,omitempty"`
+	Type            string                 `json:"type"`
+	ID              string                 `json:"id"`
+	TenantID        string                 `json:"tenant_id"`
+	OwnerID         string                 `json:"owner_id,omitempty"`
+	ClientID        string                 `json:"client_id,omitempty"`
+	SharedWith      []string               `json:"shared_with,omitempty"`
+	Visibility      string                 `json:"visibility,omitempty"`
+	Classification  string                 `json:"classification,omitempty"`
+	ContainsPII     bool                   `json:"contains_pii,omitempty"`
+	CanBeDeleted    bool                   `json:"can_be_deleted,omitempty"`
+	AssignedUsers   []string               `json:"assigned_users,omitempty"`
+	AccessStartTime string                 `json:"access_start_time,omitempty"`
+	AccessEndTime   string                 `json:"access_end_time,omitempty"`
+	Metadata        map[string]interface{} `json:"metadata,omitempty"`
 }
 
 // AuthzResponse represents OPA's response
@@ -85,22 +85,22 @@ type AuthzResponse struct {
 
 // AuthzResult contains the authorization decision
 type AuthzResult struct {
-	Allow              bool     `json:"allow"`
-	DenialReason       string   `json:"denial_reason,omitempty"`
-	TenantIsolationViolated bool `json:"tenant_isolation_violated,omitempty"`
-	RateLimitExceeded  bool     `json:"rate_limit_exceeded,omitempty"`
-	AuditRequired      bool     `json:"audit_required,omitempty"`
-	RequiresAnonymization bool  `json:"requires_anonymization,omitempty"`
-	FeatureAllowed     bool     `json:"feature_allowed,omitempty"`
+	Allow                   bool   `json:"allow"`
+	DenialReason            string `json:"denial_reason,omitempty"`
+	TenantIsolationViolated bool   `json:"tenant_isolation_violated,omitempty"`
+	RateLimitExceeded       bool   `json:"rate_limit_exceeded,omitempty"`
+	AuditRequired           bool   `json:"audit_required,omitempty"`
+	RequiresAnonymization   bool   `json:"requires_anonymization,omitempty"`
+	FeatureAllowed          bool   `json:"feature_allowed,omitempty"`
 }
 
 // Authorize makes an authorization decision using OPA
 func (c *OPAClient) Authorize(ctx context.Context, input AuthzInput) (*AuthzResult, error) {
 	start := time.Now()
-	
+
 	// Create request
 	req := AuthzRequest{Input: input}
-	
+
 	// Marshal request
 	body, err := json.Marshal(req)
 	if err != nil {
@@ -108,8 +108,8 @@ func (c *OPAClient) Authorize(ctx context.Context, input AuthzInput) (*AuthzResu
 	}
 
 	// Create HTTP request
-	httpReq, err := http.NewRequestWithContext(ctx, http.MethodPost, 
-		fmt.Sprintf("%s/v1/data/direitolux/authz", c.baseURL), 
+	httpReq, err := http.NewRequestWithContext(ctx, http.MethodPost,
+		fmt.Sprintf("%s/v1/data/direitolux/authz", c.baseURL),
 		bytes.NewReader(body))
 	if err != nil {
 		return nil, fmt.Errorf("failed to create request: %w", err)
@@ -172,8 +172,8 @@ func (c *OPAClient) CheckFeature(ctx context.Context, tenantPlan, feature string
 func (c *OPAClient) LoadPolicies(ctx context.Context, policies map[string]string) error {
 	for name, policy := range policies {
 		url := fmt.Sprintf("%s/v1/policies/%s", c.baseURL, name)
-		
-		req, err := http.NewRequestWithContext(ctx, http.MethodPut, url, 
+
+		req, err := http.NewRequestWithContext(ctx, http.MethodPut, url,
 			bytes.NewReader([]byte(policy)))
 		if err != nil {
 			return fmt.Errorf("failed to create request for policy %s: %w", name, err)
@@ -200,13 +200,13 @@ func (c *OPAClient) LoadPolicies(ctx context.Context, policies map[string]string
 // LoadData loads data into OPA (plans, tenant settings, etc)
 func (c *OPAClient) LoadData(ctx context.Context, path string, data interface{}) error {
 	url := fmt.Sprintf("%s/v1/data/%s", c.baseURL, path)
-	
+
 	body, err := json.Marshal(data)
 	if err != nil {
 		return fmt.Errorf("failed to marshal data: %w", err)
 	}
 
-	req, err := http.NewRequestWithContext(ctx, http.MethodPut, url, 
+	req, err := http.NewRequestWithContext(ctx, http.MethodPut, url,
 		bytes.NewReader(body))
 	if err != nil {
 		return fmt.Errorf("failed to create request: %w", err)
@@ -231,7 +231,7 @@ func (c *OPAClient) LoadData(ctx context.Context, path string, data interface{})
 // Health checks OPA health status
 func (c *OPAClient) Health(ctx context.Context) error {
 	url := fmt.Sprintf("%s/health", c.baseURL)
-	
+
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 	if err != nil {
 		return fmt.Errorf("failed to create request: %w", err)

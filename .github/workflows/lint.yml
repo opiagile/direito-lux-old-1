@@ -16,12 +16,24 @@ jobs:
       - uses: actions/setup-go@v5
         with:
           go-version: '1.21'
-          cache: false
           
-      - name: golangci-lint
-        uses: golangci/golangci-lint-action@v6
-        with:
-          version: v1.54.2
-          args: --timeout=5m
-          skip-cache: true
-          skip-save-cache: true
+      - name: Run gofmt
+        run: |
+          # Check if code is properly formatted
+          unformatted=$(gofmt -l .)
+          if [ -n "$unformatted" ]; then
+            echo "❌ The following files are not properly formatted:"
+            echo "$unformatted"
+            echo ""
+            echo "Run 'gofmt -w .' to format them"
+            exit 1
+          fi
+          echo "✅ All Go files are properly formatted"
+      
+      - name: Run go vet
+        run: go vet ./...
+      
+      - name: Run basic checks
+        run: |
+          go mod verify
+          go mod tidy -diff

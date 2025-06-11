@@ -256,9 +256,9 @@ func seedDatabase(db *gorm.DB) error {
 			Currency:     "BRL",
 			BillingCycle: domain.BillingCycleMonthly,
 			Features: map[string]interface{}{
-				"all_features":    true,
+				"all_features":     true,
 				"priority_support": true,
-				"api_access":      true,
+				"api_access":       true,
 			},
 			Limits: domain.PlanLimits{
 				MaxUsers:          5,

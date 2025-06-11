@@ -26,7 +26,7 @@ func (h *TenantHandler) CreateTenant(c *gin.Context) {
 	var req services.CreateTenantRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
-			"error": "Invalid request data",
+			"error":   "Invalid request data",
 			"details": err.Error(),
 		})
 		return
@@ -34,7 +34,7 @@ func (h *TenantHandler) CreateTenant(c *gin.Context) {
 
 	tenant, err := h.tenantService.CreateTenant(c.Request.Context(), &req)
 	if err != nil {
-		logger.Error("Failed to create tenant", 
+		logger.Error("Failed to create tenant",
 			zap.String("requestID", c.GetString("requestID")),
 			zap.Error(err))
 
@@ -53,7 +53,7 @@ func (h *TenantHandler) CreateTenant(c *gin.Context) {
 
 	c.JSON(http.StatusCreated, gin.H{
 		"message": "Tenant created successfully",
-		"data": tenant,
+		"data":    tenant,
 	})
 }
 
@@ -146,7 +146,7 @@ func (h *TenantHandler) UpdateTenant(c *gin.Context) {
 
 	c.JSON(http.StatusOK, gin.H{
 		"message": "Tenant updated successfully",
-		"data": tenant,
+		"data":    tenant,
 	})
 }
 

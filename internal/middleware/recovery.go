@@ -22,7 +22,7 @@ func Recovery() gin.HandlerFunc {
 				)
 
 				c.JSON(http.StatusInternalServerError, gin.H{
-					"error": "Internal server error",
+					"error":     "Internal server error",
 					"requestID": c.GetString("requestID"),
 				})
 				c.Abort()

@@ -186,7 +186,7 @@ func (h *ConsultaHandler) ConsultarJurisprudencia(c *gin.Context) {
 // @Router /consultas/status/{id} [get]
 func (h *ConsultaHandler) StatusConsulta(c *gin.Context) {
 	consultaID := c.Param("id")
-	
+
 	requestID := c.GetHeader("X-Request-ID")
 	h.logger.Info("Consultando status",
 		"request_id", requestID,

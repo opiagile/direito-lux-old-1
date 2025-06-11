@@ -32,7 +32,7 @@ func AuthorizationMiddleware(opaClient *authorization.OPAClient, db *gorm.DB) gi
 
 		tenantName, _ := c.Get("tenant")
 		claims, _ := c.Get("claims")
-		
+
 		// Build authorization input
 		input := buildAuthzInput(c, userID.(string), tenantName.(string), claims)
 
@@ -54,9 +54,9 @@ func AuthorizationMiddleware(opaClient *authorization.OPAClient, db *gorm.DB) gi
 				zap.String("user_id", userID.(string)),
 				zap.String("path", c.Request.URL.Path),
 				zap.String("reason", result.DenialReason))
-			
+
 			c.JSON(http.StatusForbidden, gin.H{
-				"error": "Access denied",
+				"error":  "Access denied",
 				"reason": result.DenialReason,
 			})
 			c.Abort()
@@ -83,7 +83,7 @@ func ResourceAuthorizationMiddleware(opaClient *authorization.OPAClient, resourc
 		userID, _ := c.Get("userID")
 		tenantName, _ := c.Get("tenant")
 		claims, _ := c.Get("claims")
-		
+
 		// Get resource ID from path
 		resourceID := c.Param("id")
 		if resourceID == "" {
@@ -115,10 +115,10 @@ func ResourceAuthorizationMiddleware(opaClient *authorization.OPAClient, resourc
 
 		if !result.Allow {
 			c.JSON(http.StatusForbidden, gin.H{
-				"error": "Access denied to resource",
-				"reason": result.DenialReason,
+				"error":         "Access denied to resource",
+				"reason":        result.DenialReason,
 				"resource_type": resourceType,
-				"resource_id": resourceID,
+				"resource_id":   resourceID,
 			})
 			c.Abort()
 			return
@@ -138,7 +138,7 @@ func ResourceAuthorizationMiddleware(opaClient *authorization.OPAClient, resourc
 		// Check rate limits
 		if result.RateLimitExceeded {
 			c.JSON(http.StatusTooManyRequests, gin.H{
-				"error": "Rate limit exceeded",
+				"error":   "Rate limit exceeded",
 				"message": "Your plan's limits have been reached for this resource type",
 			})
 			c.Abort()
@@ -155,7 +155,7 @@ func FeatureAuthorizationMiddleware(opaClient *authorization.OPAClient, feature 
 	return func(c *gin.Context) {
 		claims, _ := c.Get("claims")
 		claimsMap := claims.(map[string]interface{})
-		
+
 		// Get tenant plan from claims or database
 		tenantPlan := "starter" // Default
 		if plan, ok := claimsMap["tenant_plan"].(string); ok {
@@ -175,10 +175,10 @@ func FeatureAuthorizationMiddleware(opaClient *authorization.OPAClient, feature 
 
 		if !allowed {
 			c.JSON(http.StatusForbidden, gin.H{
-				"error": "Feature not available",
+				"error":   "Feature not available",
 				"message": "This feature is not available in your current plan",
 				"feature": feature,
-				"plan": tenantPlan,
+				"plan":    tenantPlan,
 			})
 			c.Abort()
 			return
@@ -191,12 +191,12 @@ func FeatureAuthorizationMiddleware(opaClient *authorization.OPAClient, feature 
 // buildAuthzInput builds the authorization input from request context
 func buildAuthzInput(c *gin.Context, userID, tenantName string, claims interface{}) authorization.AuthzInput {
 	claimsMap, _ := claims.(map[string]interface{})
-	
+
 	// Extract user info from claims
 	email, _ := claimsMap["email"].(string)
 	role := extractRole(claimsMap)
 	groups := extractGroups(claimsMap)
-	
+
 	// Get tenant plan (would typically come from database)
 	tenantPlan := "starter"
 	if plan, ok := claimsMap["tenant_plan"].(string); ok {
@@ -255,7 +255,7 @@ func extractRole(claims map[string]interface{}) string {
 			}
 		}
 	}
-	
+
 	// Check resource roles
 	if resourceAccess, ok := claims["resource_access"].(map[string]interface{}); ok {
 		if clientAccess, ok := resourceAccess["direito-lux-app"].(map[string]interface{}); ok {
@@ -268,14 +268,14 @@ func extractRole(claims map[string]interface{}) string {
 			}
 		}
 	}
-	
+
 	return "client" // Default to most restrictive role
 }
 
 // extractGroups extracts user groups from claims
 func extractGroups(claims map[string]interface{}) []string {
 	groups := []string{}
-	
+
 	if groupsClaim, ok := claims["groups"].([]interface{}); ok {
 		for _, group := range groupsClaim {
 			if groupStr, ok := group.(string); ok {
@@ -283,19 +283,19 @@ func extractGroups(claims map[string]interface{}) []string {
 			}
 		}
 	}
-	
+
 	return groups
 }
 
 // extractResourceType extracts resource type from path
 func extractResourceType(path string) string {
 	segments := strings.Split(strings.Trim(path, "/"), "/")
-	
+
 	// Common patterns: /api/v1/{resource_type} or /api/v1/{resource_type}/{id}
 	if len(segments) >= 3 && segments[0] == "api" {
 		return segments[2]
 	}
-	
+
 	return "unknown"
 }
 
@@ -344,13 +344,13 @@ func isPublicEndpoint(path string) bool {
 		"/api/v1/auth/refresh",
 		"/api/v1/auth/forgot-password",
 	}
-	
+
 	for _, publicPath := range publicPaths {
 		if path == publicPath {
 			return true
 		}
 	}
-	
+
 	return false
 }
 
@@ -362,27 +362,27 @@ func isSensitiveHeader(header string) bool {
 		"x-api-key",
 		"x-auth-token",
 	}
-	
+
 	headerLower := strings.ToLower(header)
 	for _, s := range sensitive {
 		if headerLower == s {
 			return true
 		}
 	}
-	
+
 	return false
 }
 
 // logAuditTrail logs authorization events that require auditing
 func logAuditTrail(db *gorm.DB, input authorization.AuthzInput, result *authorization.AuthzResult) {
 	audit := &domain.AuditLog{
-		TenantID:  uuid.MustParse(input.User.TenantID),
-		UserID:    uuid.MustParse(input.User.ID),
-		Action:    input.Action,
-		Resource:  input.Resource.Type,
+		TenantID:   uuid.MustParse(input.User.TenantID),
+		UserID:     uuid.MustParse(input.User.ID),
+		Action:     input.Action,
+		Resource:   input.Resource.Type,
 		ResourceID: input.Resource.ID,
-		IPAddress: input.ClientIP,
-		UserAgent: input.Headers["User-Agent"],
+		IPAddress:  input.ClientIP,
+		UserAgent:  input.Headers["User-Agent"],
 		Details: map[string]interface{}{
 			"method":        input.Method,
 			"path":          input.Path,
@@ -390,7 +390,7 @@ func logAuditTrail(db *gorm.DB, input authorization.AuthzInput, result *authoriz
 			"denial_reason": result.DenialReason,
 		},
 	}
-	
+
 	if err := db.Create(audit).Error; err != nil {
 		logger.Error("Failed to create audit log",
 			zap.Error(err),

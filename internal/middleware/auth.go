@@ -74,7 +74,7 @@ func Auth(keycloakClient *auth.KeycloakClient, redisClient *redis.Client) gin.Ha
 		// Extract user info from claims
 		userID, _ := claims["sub"].(string)
 		email, _ := claims["email"].(string)
-		
+
 		// Extract tenant from token
 		tenantName, err := auth.ExtractTenantFromToken(claims)
 		if err != nil {
@@ -232,7 +232,7 @@ func parseRSAPublicKey(base64Key string) (*rsa.PublicKey, error) {
 	// This is a placeholder - you should use proper X.509 parsing
 	n := new(big.Int)
 	n.SetBytes(decoded)
-	
+
 	publicKey := &rsa.PublicKey{
 		N: n,
 		E: 65537, // Common RSA exponent

@@ -34,7 +34,7 @@ func main() {
 			"timestamp": time.Now().Unix(),
 			"features": []string{
 				"Multi-tenant authentication",
-				"Keycloak integration", 
+				"Keycloak integration",
 				"JWT validation",
 				"RBAC (Role-Based Access Control)",
 				"Redis caching",
@@ -86,11 +86,11 @@ func main() {
 			},
 			"features": gin.H{
 				"multi_tenancy": gin.H{
-					"description": "Isolamento completo de dados por tenant (escritório/profissional)",
+					"description":    "Isolamento completo de dados por tenant (escritório/profissional)",
 					"implementation": "Keycloak Groups + tenant_id em todas as queries",
 				},
 				"rbac": gin.H{
-					"roles": []string{"admin", "lawyer", "secretary", "client"},
+					"roles":       []string{"admin", "lawyer", "secretary", "client"},
 					"description": "Controle de acesso baseado em papéis por tenant",
 				},
 				"security": gin.H{
@@ -100,32 +100,32 @@ func main() {
 				},
 				"plans": []gin.H{
 					{
-						"name":   "Starter",
-						"price":  99.90,
-						"users":  1,
+						"name":    "Starter",
+						"price":   99.90,
+						"users":   1,
 						"clients": 50,
-						"cases":  100,
+						"cases":   100,
 					},
 					{
-						"name":   "Professional", 
-						"price":  299.90,
-						"users":  5,
+						"name":    "Professional",
+						"price":   299.90,
+						"users":   5,
 						"clients": 500,
-						"cases":  1000,
+						"cases":   1000,
 					},
 					{
-						"name":   "Enterprise",
-						"price":  999.90,
-						"users":  -1, // unlimited
+						"name":    "Enterprise",
+						"price":   999.90,
+						"users":   -1, // unlimited
 						"clients": -1,
-						"cases":  -1,
+						"cases":   -1,
 					},
 				},
 			},
 			"endpoints": gin.H{
 				"authentication": []string{
 					"POST /api/v1/auth/login",
-					"POST /api/v1/auth/refresh", 
+					"POST /api/v1/auth/refresh",
 					"POST /api/v1/auth/forgot-password",
 				},
 				"tenants": []string{
@@ -150,22 +150,22 @@ func main() {
 			Realm:    "direito-lux",
 			ClientID: "direito-lux-app",
 		}
-		
+
 		keycloakClient := auth.NewKeycloakClient(cfg)
-		
+
 		// Try to get public key to test connection
 		_, err := keycloakClient.GetPublicKey(c.Request.Context())
-		
+
 		status := "connected"
 		if err != nil {
 			status = "disconnected: " + err.Error()
 		}
-		
+
 		c.JSON(http.StatusOK, gin.H{
 			"status": status,
 			"config": gin.H{
-				"base_url": cfg.BaseURL,
-				"realm":    cfg.Realm,
+				"base_url":  cfg.BaseURL,
+				"realm":     cfg.Realm,
 				"client_id": cfg.ClientID,
 			},
 			"urls": gin.H{
@@ -183,13 +183,13 @@ func main() {
 			// Ignore error for demo purposes
 			req = make(map[string]interface{})
 		}
-		
+
 		c.JSON(http.StatusOK, gin.H{
 			"message": "Demo - Tenant creation simulation",
 			"request": req,
 			"actions": []string{
 				"1. Validate tenant name and plan",
-				"2. Create Keycloak group for tenant isolation", 
+				"2. Create Keycloak group for tenant isolation",
 				"3. Create tenant record in PostgreSQL",
 				"4. Create subscription with trial status",
 				"5. Create admin user in Keycloak",
@@ -304,7 +304,7 @@ func main() {
 	})
 
 	router.Static("/static", "./static")
-	
+
 	// Start server
 	if err := router.Run(":9000"); err != nil {
 		panic(err)
