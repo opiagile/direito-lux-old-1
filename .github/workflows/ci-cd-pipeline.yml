@@ -239,6 +239,8 @@ jobs:
                   env:
                   - name: ENVIRONMENT
                     value: "dev"
+                  - name: DEMO_MODE
+                    value: "true"
                   - name: DIREITO_LUX_SERVER_PORT
                     value: "8080"
                   - name: DIREITO_LUX_DATABASE_HOST

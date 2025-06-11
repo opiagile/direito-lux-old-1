@@ -43,32 +43,53 @@ func main() {
 		zap.String("version", "1.0.0"),
 		zap.String("mode", cfg.Server.Mode))
 
-	// Initialize database
-	db, err := initDatabase(cfg)
-	if err != nil {
-		logger.Fatal("Failed to initialize database", zap.Error(err))
+	// Check if running in demo/healthcheck mode
+	demoMode := os.Getenv("DEMO_MODE") == "true" || os.Getenv("HEALTHCHECK_ONLY") == "true"
+	
+	var db *gorm.DB
+	if !demoMode {
+		// Initialize database
+		var err error
+		db, err = initDatabase(cfg)
+		if err != nil {
+			logger.Fatal("Failed to initialize database", zap.Error(err))
+		}
+	} else {
+		logger.Info("Running in demo mode - skipping database initialization")
 	}
 
-	// Initialize Redis
-	redisClient := initRedis(cfg)
-	defer redisClient.Close()
+	var redisClient *redis.Client
+	var keycloakClient *auth.KeycloakClient
+	var repos *repository.Repositories
+	var tenantService *services.TenantService
+	
+	if !demoMode {
+		// Initialize Redis
+		redisClient = initRedis(cfg)
+		defer redisClient.Close()
 
-	// Initialize Keycloak client
-	keycloakClient := auth.NewKeycloakClient(&cfg.Keycloak)
+		// Initialize Keycloak client
+		keycloakClient = auth.NewKeycloakClient(&cfg.Keycloak)
 
-	// Initialize repositories
-	repos := repository.NewRepositories(db)
+		// Initialize repositories
+		repos = repository.NewRepositories(db)
 
-	// Initialize services
-	tenantService := services.NewTenantService(db, keycloakClient)
+		// Initialize services
+		tenantService = services.NewTenantService(db, keycloakClient)
+	} else {
+		logger.Info("Skipping Redis, Keycloak, and services initialization in demo mode")
+	}
 	// Add more services as needed
 
 	// Initialize handlers
-	tenantHandler := handlers.NewTenantHandler(tenantService)
+	var tenantHandler *handlers.TenantHandler
+	if !demoMode && tenantService != nil {
+		tenantHandler = handlers.NewTenantHandler(tenantService)
+	}
 	// Add more handlers as needed
 
 	// Setup router
-	router := setupRouter(cfg, keycloakClient, redisClient, repos, tenantHandler)
+	router := setupRouter(cfg, keycloakClient, redisClient, repos, tenantHandler, demoMode)
 
 	// Start server
 	srv := &http.Server{
@@ -159,6 +180,7 @@ func setupRouter(
 	redisClient *redis.Client,
 	repos *repository.Repositories,
 	tenantHandler *handlers.TenantHandler,
+	demoMode bool,
 ) *gin.Engine {
 	if cfg.Server.Mode == "release" {
 		gin.SetMode(gin.ReleaseMode)
@@ -174,37 +196,44 @@ func setupRouter(
 
 	// Health check
 	router.GET("/health", func(c *gin.Context) {
+		status := "healthy"
+		mode := "full"
+		if os.Getenv("DEMO_MODE") == "true" || os.Getenv("HEALTHCHECK_ONLY") == "true" {
+			mode = "demo"
+		}
 		c.JSON(http.StatusOK, gin.H{
-			"status": "healthy",
+			"status": status,
+			"mode":   mode,
 			"time":   time.Now().Unix(),
 		})
 	})
 
-	// API v1 routes
-	v1 := router.Group("/api/v1")
-	{
-		// Public routes
-		public := v1.Group("")
+	if !demoMode {
+		// API v1 routes (only in full mode)
+		v1 := router.Group("/api/v1")
 		{
-			public.POST("/auth/login", handlers.Login(keycloakClient))
-			public.POST("/auth/refresh", handlers.RefreshToken(keycloakClient))
-			public.POST("/auth/forgot-password", handlers.ForgotPassword(keycloakClient))
-		}
-
-		// Protected routes
-		protected := v1.Group("")
-		protected.Use(middleware.Auth(keycloakClient, redisClient))
-		{
-			// Tenant management (admin only)
-			admin := protected.Group("")
-			admin.Use(middleware.RequireRole("admin"))
+			// Public routes
+			public := v1.Group("")
 			{
-				admin.POST("/tenants", tenantHandler.CreateTenant)
-				admin.GET("/tenants", tenantHandler.ListTenants)
-				admin.GET("/tenants/:id", tenantHandler.GetTenant)
-				admin.PUT("/tenants/:id", tenantHandler.UpdateTenant)
-				admin.GET("/tenants/:id/usage", tenantHandler.GetTenantUsage)
+				public.POST("/auth/login", handlers.Login(keycloakClient))
+				public.POST("/auth/refresh", handlers.RefreshToken(keycloakClient))
+				public.POST("/auth/forgot-password", handlers.ForgotPassword(keycloakClient))
 			}
+
+			// Protected routes
+			protected := v1.Group("")
+			protected.Use(middleware.Auth(keycloakClient, redisClient))
+			{
+				// Tenant management (admin only)
+				admin := protected.Group("")
+				admin.Use(middleware.RequireRole("admin"))
+				{
+					admin.POST("/tenants", tenantHandler.CreateTenant)
+					admin.GET("/tenants", tenantHandler.ListTenants)
+					admin.GET("/tenants/:id", tenantHandler.GetTenant)
+					admin.PUT("/tenants/:id", tenantHandler.UpdateTenant)
+					admin.GET("/tenants/:id/usage", tenantHandler.GetTenantUsage)
+				}
 
 			// User profile
 			protected.GET("/profile", handlers.GetProfile())
@@ -212,6 +241,9 @@ func setupRouter(
 
 			// Add more protected routes as needed
 		}
+	}
+	} else {
+		logger.Info("Running in demo mode - API routes disabled")
 	}
 
 	return router
