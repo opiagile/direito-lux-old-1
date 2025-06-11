@@ -1,0 +1,67 @@
+# FastAPI e dependências web
+fastapi==0.104.1
+uvicorn[standard]==0.24.0
+pydantic==2.5.0
+pydantic-settings==2.1.0
+
+# LangChain ecosystem
+langchain==0.1.0
+langchain-openai==0.0.2
+langchain-community==0.0.10
+langchain-experimental==0.0.47
+
+# Vector Database
+chromadb==0.4.18
+sentence-transformers==2.2.2
+
+# LLM integrations
+openai==1.6.1
+google-cloud-aiplatform==1.38.1
+
+# RAG e avaliação
+ragas==0.1.1
+datasets==2.16.1
+evaluate==0.4.1
+
+# Processamento de texto
+tiktoken==0.5.2
+pypdf==3.17.4
+python-docx==1.1.0
+beautifulsoup4==4.12.2
+
+# Segurança e DLP
+google-cloud-dlp==3.15.0
+cryptography==41.0.8
+
+# Observabilidade
+prometheus-client==0.19.0
+opentelemetry-api==1.21.0
+opentelemetry-sdk==1.21.0
+opentelemetry-instrumentation-fastapi==0.42b0
+
+# Utilidades
+python-multipart==0.0.6
+python-jose[cryptography]==3.3.0
+httpx==0.26.0
+aiofiles==23.2.1
+redis==5.0.1
+
+# Processamento assíncrono
+celery==5.3.4
+flower==2.0.1
+
+# Logging estruturado
+structlog==23.2.0
+loguru==0.7.2
+
+# Testes
+pytest==7.4.3
+pytest-asyncio==0.23.2
+pytest-mock==3.12.0
+httpx==0.26.0
+
+# Qualidade de código
+black==23.12.0
+isort==5.13.2
+flake8==6.1.0
+mypy==1.8.0

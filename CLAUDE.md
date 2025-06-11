@@ -61,16 +61,245 @@ Divida o desenvolvimento em módulos independentes, sugerindo a ordem de impleme
 | 0      | 🚧     | Setup CI/CD, Keycloak HA, Vault        | GitHub Actions, ArgoCD, Docker Compose  |
 | 1      | ✅     | Núcleo Auth/Admin Go + Keycloak        | keycloak-admin-go, Redis, PostgreSQL     |
 | 2      | ✅     | API Gateway, Health, OPA               | Kong Gateway, OPA, Prometheus, Grafana  |
-| 3      | 📋     | Consulta Jurídica + Circuit Breaker    | Go, Hystrix, ELK, OpenTelemetry          |
-| 4      | 📋     | IA Jurídica (RAG + Avaliação)          | Python, LangChain, Vertex AI, Ragas      |
-| 5      | 📋     | Mensageria e Eventos                   | Go, Kafka, Avro, DLQ                     |
+| 3      | ✅     | Consulta Jurídica + Circuit Breaker    | Go, Hystrix, ELK, OpenTelemetry          |
+| 4      | ✅     | IA Jurídica (RAG + Avaliação)          | Python, LangChain, Vertex AI, Ragas      |
+| 5      | 📋     | Mensageria, Eventos e DataJud          | Go, Kafka, Avro, DLQ, API CNJ            |
 | 6      | 📋     | Painel Admin Web (React/Vue.js)        | React, Keycloak JS Adapter               |
 | 7      | 📋     | Billing e Relatórios                   | Go, Stripe SDK, BigQuery                 |
+| 8      | 📋     | Multi-Account DataJud Scaling          | Go, Pool Manager, Auto-scaling, Monitor  |
 
 **Status atual (6/10/2025):**
 - ✅ **Módulo 1 Completo:** API Go, Keycloak multi-tenant, PostgreSQL, Redis, Nginx LB
-- ✅ **Módulo 2 Completo:** Kong Gateway, OPA, Prometheus, Grafana, Jaeger (observabilidade)
+- ✅ **Módulo 2 Completo:** Kong Gateway, OPA, Prometheus, Grafana, Jaeger (observabilidade)  
+- ✅ **Módulo 3 Completo:** Serviço Go consulta jurídica, Circuit Breaker, ELK Stack
+- ✅ **Módulo 4 Completo:** FastAPI Python, ChromaDB, LangChain RAG, Ragas, OpenAI/Vertex AI
 - 🚧 **Módulo 0 Parcial:** Docker Compose configurado, CI/CD e Vault pendentes
+
+### Detalhes do Módulo 4 - IA Jurídica (RAG + Avaliação)
+
+**Arquitetura implementada:**
+- 🐍 **FastAPI Service** (`localhost:9003`): API REST para consultas jurídicas com IA
+- 🗄️ **ChromaDB** (`localhost:8000`): Vector database para armazenamento semântico
+- 🧠 **LangChain RAG**: Retrieval-Augmented Generation com prompt templates jurídicos
+- 📊 **Ragas Evaluation**: Sistema de avaliação contínua da qualidade das respostas
+- ⚡ **Redis Cache**: Cache para embeddings e resultados frequentes
+- 🔄 **Celery Workers**: Processamento assíncrono e avaliações em background
+
+**Serviços configurados:**
+- `/services/ia-juridica/`: Código Python completo do serviço de IA
+- `docker-compose.ia.yml`: Orquestração dos serviços de IA (ChromaDB, Redis, Celery)
+- `scripts/setup-knowledge-base.py`: Script para inicializar base jurídica
+
+**APIs disponíveis:**
+- `POST /api/v1/rag/query`: Consulta jurídica com RAG (processo, legislação, jurisprudência)
+- `POST /api/v1/rag/batch-query`: Consultas em lote para análise massiva
+- `POST /api/v1/evaluation/evaluate`: Avaliação manual de resposta usando Ragas
+- `POST /api/v1/knowledge/documents`: Adicionar documentos à base jurídica
+- `GET /api/v1/knowledge/stats`: Estatísticas da base de conhecimento
+
+**Configuração necessária:**
+```bash
+# Inicializar rede e serviços de IA
+docker network create direito-lux-network
+docker-compose -f docker-compose.ia.yml up -d
+
+# Configurar base de conhecimento inicial
+cd scripts && python setup-knowledge-base.py init
+```
+
+**Variáveis de ambiente críticas:**
+- `OPENAI_API_KEY`: Chave da API OpenAI (ou usar Vertex AI)
+- `GOOGLE_CLOUD_PROJECT`: Projeto GCP para Vertex AI/DLP (opcional)
+- `REDIS_PASSWORD`: Senha do Redis para cache e Celery
+
+### Detalhes do Módulo 5 - Mensageria, Eventos e DataJud (Planejado)
+
+**Funcionalidades a implementar:**
+- 📱 **Integração WhatsApp Business API**: Chatbot jurídico para consultas
+- 💬 **Integração Telegram Bot**: Interface alternativa para consultas
+- 📧 **Integração Slack**: Para escritórios e equipes jurídicas
+- ⚖️ **Integração DataJud (CNJ)**: Consulta de processos judiciais
+- 📊 **Sistema de eventos**: Kafka/Pub-Sub para processamento assíncrono
+
+**API DataJud - Consultas disponíveis:**
+- 🔢 **Por número do processo**: Padrão CNJ (NNNNNNN-DD.AAAA.J.TT.OOOO)
+- 👤 **Por CPF/CNPJ**: Buscar todos os processos de uma pessoa/empresa
+- 📝 **Por nome das partes**: Busca textual por autor/réu
+- 🏛️ **Por tribunal**: Filtrar por TJ, TRF, STJ, STF
+- 📅 **Por período**: Processos distribuídos em determinada data
+- ⚖️ **Por classe processual**: Tipo de ação (execução, mandado segurança, etc.)
+- 🏷️ **Por assunto**: Área do direito (trabalhista, cível, criminal)
+- 👨‍⚖️ **Por advogado (OAB)**: Processos de determinado advogado
+
+**Fluxo de consulta via mensageria:**
+1. Cliente envia mensagem: "Consultar processo 1234567-89.2024.8.26.0100"
+2. Bot autentica usuário (CPF + código de acesso)
+3. Consulta DataJud via API
+4. Formata resposta com: status, movimentações, próximas datas
+5. Envia resposta formatada via WhatsApp/Telegram
+6. Registra consulta para auditoria e cobrança
+
+**Segurança e Compliance:**
+- Autenticação multi-fator para consultas sensíveis
+- Criptografia end-to-end nas mensagens
+- Logs de acesso para compliance LGPD
+- Rate limiting por usuário/tenant
+- Anonimização de dados pessoais em logs
+
+**Limites de Consulta DataJud:**
+- 🏛️ **API CNJ**: 100 req/min, 10.000 consultas/dia por instituição
+- 📊 **Plano Básico**: 50 consultas/dia, 1.000/mês, 10 processos monitorados
+- 💼 **Plano Profissional**: 200 consultas/dia, 5.000/mês, 50 processos monitorados
+- 🏢 **Plano Enterprise**: 1.000 consultas/dia, 25.000/mês, monitoramento ilimitado
+- 💬 **WhatsApp**: 20 consultas/hora, 10s entre consultas
+- 🔄 **Cache**: 24h processos ativos, 7d processos arquivados
+- 💰 **Consultas extras**: R$ 0,50 (básico), R$ 0,30 (pro), R$ 0,20 (enterprise)
+
+**Otimizações Implementadas:**
+```go
+// Cache inteligente para economizar quota
+type ProcessoCache struct {
+    NumeroProcesso    string
+    DadosProcesso     DataJudResponse
+    UltimaAtualizacao time.Time
+    TTL               time.Duration // 24h ativos, 7d arquivados
+}
+
+// Consultas em lote (até 50 processos/requisição)
+func ConsultarMultiplosProcessos(numeros []string) {}
+
+// Webhooks para evitar polling desnecessário
+func RegistrarWebhookDataJud(numeroProcesso string) {}
+
+// Rate limiting com mensagens amigáveis
+func RateLimitMiddleware() gin.HandlerFunc {
+    return func(c *gin.Context) {
+        if dailyCount >= plano.ConsultasDia {
+            c.JSON(429, gin.H{
+                "error": "Limite diário excedido",
+                "limite": plano.ConsultasDia,
+                "reset_em": proximoDiaUTC(),
+                "upgrade_url": "/planos",
+            })
+        }
+    }
+}
+```
+
+**Pacotes de Consultas Adicionais:**
+- 100 consultas: R$ 29,90
+- 500 consultas: R$ 99,90
+- 2.000 consultas: R$ 299,90
+
+### Detalhes do Módulo 8 - Multi-Account DataJud Scaling
+
+**Objetivo:** Escalar capacidade de consultas DataJud de 10k para 50k+ consultas/dia através de múltiplas contas CNJ.
+
+**Arquitetura Multi-Account:**
+```go
+// Pool de contas DataJud com rotação inteligente
+type DataJudAccountPool struct {
+    Contas []DataJudAccount
+    atual  int
+    mu     sync.Mutex
+}
+
+type DataJudAccount struct {
+    ID          string
+    CNPJ        string
+    Token       string
+    Certificado string
+    LimitesDia  int
+    UsadoHoje   int
+    Status      string // "active", "limit_reached", "error"
+}
+
+// Rotação automática entre contas disponíveis
+func (pool *DataJudAccountPool) GetNextAccount() (*DataJudAccount, error) {
+    // Encontra próxima conta com limite disponível
+    // Estratégias: round_robin, least_used, priority
+}
+```
+
+**Requisitos para Múltiplas Contas:**
+- 📝 **CNPJ diferente** para cada conta (filiais ou empresas do grupo)
+- 🔐 **Certificado Digital** e-CNPJ A1/A3 (~R$ 500/ano cada)
+- ⏱️ **Homologação CNJ** 30-60 dias por conta
+- 📄 **Justificativa** de negócio para múltiplas contas
+
+**Estrutura Jurídica Recomendada:**
+```
+Holding Direito Lux
+├── Direito Lux Tecnologia Ltda (Matriz) → Conta #1
+├── Direito Lux Consultoria Ltda → Conta #2
+├── Direito Lux Serviços Digitais → Conta #3
+├── Direito Lux Inovação Jurídica → Conta #4
+└── Direito Lux Analytics → Conta #5
+```
+
+**Plano de Crescimento Escalonado:**
+- **Fase 1** (0-6 meses): 1 conta = 10k consultas/dia = até 300 clientes
+- **Fase 2** (6-12 meses): 2 contas = 20k consultas/dia = até 600 clientes
+- **Fase 3** (12-24 meses): 3 contas = 30k consultas/dia = até 1.000 clientes
+- **Fase 4** (24+ meses): 5+ contas = 50k+ consultas/dia = 2.000+ clientes
+
+**Sistema de Monitoramento:**
+```typescript
+// Dashboard de uso multi-account
+interface AccountStatus {
+  name: string;
+  cnpj: string;
+  usedToday: number;
+  limit: number;
+  percentage: number;
+  status: 'healthy' | 'warning' | 'critical';
+}
+
+// Auto-scaling triggers
+const scalingRules = {
+  70: "Alerta: Preparar nova conta",
+  85: "Urgente: Ativar rate limiting strict", 
+  95: "Crítico: Modo emergência + pausar cadastros"
+};
+```
+
+**Configuração YAML Multi-Account:**
+```yaml
+datajud:
+  strategy: "least_used" # round_robin, priority
+  accounts:
+    - name: "Conta Principal"
+      cnpj: "11.111.111/0001-11"
+      certificate: "/certs/conta1.pfx"
+      priority: 1
+      max_daily: 10000
+    
+    - name: "Conta Secundária"
+      cnpj: "22.222.222/0001-22"
+      certificate: "/certs/conta2.pfx"
+      priority: 2
+      max_daily: 10000
+```
+
+**ROI do Scaling:**
+- Custo por conta: R$ 500/ano (certificado) + R$ 2.000 (setup)
+- Capacidade adicional: 10.000 consultas/dia
+- Receita potencial: R$ 50-100k/mês por conta
+- **ROI: 100-150x** sobre investimento
+
+**Implementação Técnica:**
+1. Account Pool Manager (rotação e balanceamento)
+2. Usage Tracker (monitoramento em tempo real)
+3. Auto-scaling Service (alertas e provisioning)
+4. Dashboard Monitor (visualização multi-conta)
+5. Fallback Strategy (conta backup para emergências)
+
+**Métricas de Sucesso:**
+- 📊 Utilização balanceada entre contas (<80% cada)
+- ⚡ Tempo de resposta mantido (<500ms)
+- 🔄 Zero downtime por limite de quota
+- 📈 Crescimento sustentável de clientes
+- 💰 ROI > 100x por conta adicional
 
 Para cada módulo:
 - Gere diagramas de arquitetura em texto explicando os fluxos.

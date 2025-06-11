@@ -1,0 +1,169 @@
+version: '3.8'
+
+services:
+  # ChromaDB Vector Database
+  chromadb:
+    image: chromadb/chroma:latest
+    container_name: direito-lux-chromadb
+    ports:
+      - "8000:8000"
+    volumes:
+      - chroma_data:/chroma/chroma
+    environment:
+      - CHROMA_SERVER_AUTH_CREDENTIALS_FILE=/chroma/auth/credentials
+      - CHROMA_SERVER_AUTH_CREDENTIALS_PROVIDER=chromadb.auth.basic.BasicAuthCredentialsProvider
+      - CHROMA_SERVER_AUTH_PROVIDER=chromadb.auth.basic.BasicAuthServerProvider
+    command: --workers 1 --host 0.0.0.0 --port 8000 --proxy-headers --log-config chromadb/log_config.yml
+    networks:
+      - direito-lux-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/api/v1/heartbeat"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 40s
+
+  # IA Jurídica Service (FastAPI + RAG)
+  ia-juridica:
+    build:
+      context: ./services/ia-juridica
+      dockerfile: Dockerfile
+    container_name: direito-lux-ia-juridica
+    ports:
+      - "9003:9003"
+    environment:
+      # Application
+      - DIREITO_LUX_IA_ENVIRONMENT=production
+      - DIREITO_LUX_IA_PORT=9003
+      - DIREITO_LUX_IA_WORKERS=4
+      - DIREITO_LUX_IA_LOG_LEVEL=INFO
+      
+      # Vector Database
+      - DIREITO_LUX_IA_CHROMA_HOST=chromadb
+      - DIREITO_LUX_IA_CHROMA_PORT=8000
+      - DIREITO_LUX_IA_CHROMA_COLLECTION_NAME=direito_lux_legal_docs
+      
+      # LLM Configuration
+      - DIREITO_LUX_IA_LLM_PROVIDER=openai
+      - DIREITO_LUX_IA_OPENAI_API_KEY=${OPENAI_API_KEY}
+      - DIREITO_LUX_IA_OPENAI_MODEL=gpt-4-turbo-preview
+      
+      # RAG Configuration
+      - DIREITO_LUX_IA_RETRIEVAL_TOP_K=5
+      - DIREITO_LUX_IA_CHUNK_SIZE=1000
+      - DIREITO_LUX_IA_CHUNK_OVERLAP=200
+      - DIREITO_LUX_IA_SIMILARITY_THRESHOLD=0.7
+      
+      # Evaluation
+      - DIREITO_LUX_IA_EVALUATION_ENABLED=true
+      - DIREITO_LUX_IA_EVALUATION_BATCH_SIZE=10
+      
+      # Redis (for caching)
+      - DIREITO_LUX_IA_REDIS_HOST=redis
+      - DIREITO_LUX_IA_REDIS_PORT=6379
+      - DIREITO_LUX_IA_REDIS_DB=2
+      
+      # Google Cloud (if using Vertex AI)
+      - DIREITO_LUX_IA_GOOGLE_CLOUD_PROJECT=${GOOGLE_CLOUD_PROJECT}
+      - DIREITO_LUX_IA_GOOGLE_CLOUD_LOCATION=us-central1
+      - DIREITO_LUX_IA_VERTEX_AI_MODEL=text-bison
+      
+      # DLP Configuration
+      - DIREITO_LUX_IA_DLP_ENABLED=true
+      - DIREITO_LUX_IA_GOOGLE_CLOUD_DLP_PROJECT=${GOOGLE_CLOUD_PROJECT}
+    volumes:
+      - ./data/knowledge_base:/app/data/knowledge_base
+      - ./logs/ia-juridica:/app/logs
+    depends_on:
+      chromadb:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - direito-lux-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9003/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+    restart: unless-stopped
+
+  # Redis for caching and background tasks
+  redis:
+    image: redis:7-alpine
+    container_name: direito-lux-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD:-redis123}
+    networks:
+      - direito-lux-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "--no-auth-warning", "-a", "${REDIS_PASSWORD:-redis123}", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    restart: unless-stopped
+
+  # Celery Worker for background tasks
+  celery-worker:
+    build:
+      context: ./services/ia-juridica
+      dockerfile: Dockerfile
+    container_name: direito-lux-celery-worker
+    command: celery -A app.tasks.celery worker --loglevel=info
+    environment:
+      # Copy same environment as ia-juridica service
+      - DIREITO_LUX_IA_ENVIRONMENT=production
+      - DIREITO_LUX_IA_LOG_LEVEL=INFO
+      - DIREITO_LUX_IA_CHROMA_HOST=chromadb
+      - DIREITO_LUX_IA_CHROMA_PORT=8000
+      - DIREITO_LUX_IA_LLM_PROVIDER=openai
+      - DIREITO_LUX_IA_OPENAI_API_KEY=${OPENAI_API_KEY}
+      - DIREITO_LUX_IA_REDIS_HOST=redis
+      - DIREITO_LUX_IA_REDIS_PORT=6379
+      - DIREITO_LUX_IA_REDIS_PASSWORD=${REDIS_PASSWORD:-redis123}
+      - DIREITO_LUX_IA_CELERY_BROKER_URL=redis://:${REDIS_PASSWORD:-redis123}@redis:6379/3
+      - DIREITO_LUX_IA_CELERY_RESULT_BACKEND=redis://:${REDIS_PASSWORD:-redis123}@redis:6379/3
+    volumes:
+      - ./data/knowledge_base:/app/data/knowledge_base
+      - ./logs/celery:/app/logs
+    depends_on:
+      redis:
+        condition: service_healthy
+      chromadb:
+        condition: service_healthy
+    networks:
+      - direito-lux-network
+    restart: unless-stopped
+
+  # Celery Flower for monitoring background tasks
+  celery-flower:
+    build:
+      context: ./services/ia-juridica
+      dockerfile: Dockerfile
+    container_name: direito-lux-celery-flower
+    command: celery -A app.tasks.celery flower --port=5555
+    ports:
+      - "5555:5555"
+    environment:
+      - DIREITO_LUX_IA_CELERY_BROKER_URL=redis://:${REDIS_PASSWORD:-redis123}@redis:6379/3
+      - DIREITO_LUX_IA_CELERY_RESULT_BACKEND=redis://:${REDIS_PASSWORD:-redis123}@redis:6379/3
+    depends_on:
+      - redis
+      - celery-worker
+    networks:
+      - direito-lux-network
+    restart: unless-stopped
+
+volumes:
+  chroma_data:
+    driver: local
+  redis_data:
+    driver: local
+
+networks:
+  direito-lux-network:
+    external: true

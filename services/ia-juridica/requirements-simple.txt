@@ -1,0 +1,28 @@
+# FastAPI e dependências web essenciais
+fastapi==0.104.1
+uvicorn[standard]==0.24.0
+pydantic==2.5.0
+pydantic-settings==2.1.0
+
+# LangChain ecosystem (versões mais estáveis)
+langchain==0.1.0
+langchain-openai==0.0.2
+langchain-community==0.0.10
+
+# Vector Database
+chromadb==0.4.18
+sentence-transformers==2.2.2
+
+# LLM integrations
+openai==1.6.1
+
+# Processamento de texto básico
+tiktoken==0.5.2
+
+# Utilidades
+python-multipart==0.0.6
+httpx==0.26.0
+redis==5.0.1
+
+# Logging estruturado
+structlog==23.2.0

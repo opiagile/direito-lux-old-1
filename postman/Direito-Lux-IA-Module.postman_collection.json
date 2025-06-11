@@ -1,0 +1,286 @@
+{
+  "info": {
+    "name": "Direito Lux - IA Jurídica",
+    "description": "Collection para testar o Módulo 4 - IA Jurídica com RAG e Avaliação",
+    "version": "1.0.0",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:9003",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "Health Check",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/health",
+          "host": ["{{base_url}}"],
+          "path": ["health"]
+        },
+        "description": "Verificar se o serviço de IA está funcionando"
+      }
+    },
+    {
+      "name": "Consulta Jurídica - Direitos Fundamentais",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"question\": \"O que são direitos fundamentais e onde estão previstos na Constituição?\",\n  \"query_type\": \"legislacao\",\n  \"evaluate_response\": true\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/api/v1/rag/query",
+          "host": ["{{base_url}}"],
+          "path": ["api", "v1", "rag", "query"]
+        },
+        "description": "Consulta sobre direitos fundamentais"
+      }
+    },
+    {
+      "name": "Consulta Jurídica - Responsabilidade Civil",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"question\": \"Quais são os elementos da responsabilidade civil? Explique o artigo 186 do Código Civil.\",\n  \"query_type\": \"legislacao\",\n  \"evaluate_response\": true\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/api/v1/rag/query",
+          "host": ["{{base_url}}"],
+          "path": ["api", "v1", "rag", "query"]
+        },
+        "description": "Consulta sobre responsabilidade civil"
+      }
+    },
+    {
+      "name": "Consulta Jurídica - Justa Causa Trabalhista",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"question\": \"Quais são as hipóteses de justa causa para demissão de empregado?\",\n  \"query_type\": \"legislacao\",\n  \"context_filters\": {\n    \"source_type\": \"clt\"\n  },\n  \"evaluate_response\": true\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/api/v1/rag/query",
+          "host": ["{{base_url}}"],
+          "path": ["api", "v1", "rag", "query"]
+        },
+        "description": "Consulta sobre justa causa trabalhista"
+      }
+    },
+    {
+      "name": "Consulta Jurídica - Violência Doméstica",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"question\": \"Quais são os tipos de violência doméstica previstos na Lei Maria da Penha?\",\n  \"query_type\": \"legislacao\",\n  \"context_filters\": {\n    \"law_number\": \"Lei nº 11.340/2006\"\n  },\n  \"evaluate_response\": true\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/api/v1/rag/query",
+          "host": ["{{base_url}}"],
+          "path": ["api", "v1", "rag", "query"]
+        },
+        "description": "Consulta sobre Lei Maria da Penha"
+      }
+    },
+    {
+      "name": "Consulta Geral - Pergunta Aberta",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"question\": \"Como funciona a prescrição no direito brasileiro?\",\n  \"query_type\": \"geral\",\n  \"evaluate_response\": false\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/api/v1/rag/query",
+          "host": ["{{base_url}}"],
+          "path": ["api", "v1", "rag", "query"]
+        },
+        "description": "Consulta jurídica geral"
+      }
+    },
+    {
+      "name": "Batch Query - Múltiplas Consultas",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"queries\": [\n    {\n      \"question\": \"O que é ato ilícito?\",\n      \"query_type\": \"legislacao\"\n    },\n    {\n      \"question\": \"Quais são os direitos de liberdade?\",\n      \"query_type\": \"legislacao\"\n    },\n    {\n      \"question\": \"O que caracteriza abandono de emprego?\",\n      \"query_type\": \"legislacao\"\n    }\n  ]\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/api/v1/rag/batch-query",
+          "host": ["{{base_url}}"],
+          "path": ["api", "v1", "rag", "batch-query"]
+        },
+        "description": "Múltiplas consultas em uma requisição"
+      }
+    },
+    {
+      "name": "RAG Stats",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/api/v1/rag/stats",
+          "host": ["{{base_url}}"],
+          "path": ["api", "v1", "rag", "stats"]
+        },
+        "description": "Estatísticas do sistema RAG"
+      }
+    },
+    {
+      "name": "Knowledge Base Stats",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/api/v1/knowledge/stats",
+          "host": ["{{base_url}}"],
+          "path": ["api", "v1", "knowledge", "stats"]
+        },
+        "description": "Estatísticas da base de conhecimento"
+      }
+    },
+    {
+      "name": "Search Documents",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"query\": \"direitos fundamentais\",\n  \"top_k\": 3,\n  \"min_similarity\": 0.5\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/api/v1/knowledge/search",
+          "host": ["{{base_url}}"],
+          "path": ["api", "v1", "knowledge", "search"]
+        },
+        "description": "Busca semântica na base de conhecimento"
+      }
+    },
+    {
+      "name": "Add Legal Document",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"content\": \"Art. 1º Esta lei estabelece normas de proteção e defesa do consumidor, de ordem pública e interesse social, nos termos dos arts. 5º, inciso XXXII, 170, inciso V, da Constituição Federal e art. 48 de suas Disposições Transitórias.\",\n  \"metadata\": {\n    \"title\": \"Código de Defesa do Consumidor - Art. 1º\",\n    \"source_type\": \"codigo_consumidor\",\n    \"law_number\": \"Lei nº 8.078/1990\",\n    \"article_number\": \"Art. 1º\",\n    \"subject\": \"direito_consumidor\",\n    \"keywords\": [\"consumidor\", \"proteção\", \"defesa\"]\n  }\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/api/v1/knowledge/documents",
+          "host": ["{{base_url}}"],
+          "path": ["api", "v1", "knowledge", "documents"]
+        },
+        "description": "Adicionar novo documento jurídico"
+      }
+    },
+    {
+      "name": "Evaluate Response",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"question\": \"O que são direitos fundamentais?\",\n  \"answer\": \"Direitos fundamentais são direitos básicos e essenciais reconhecidos e protegidos pela Constituição Federal, garantindo a dignidade da pessoa humana.\",\n  \"contexts\": [\n    \"Art. 5º Todos são iguais perante a lei, sem distinção de qualquer natureza, garantindo-se aos brasileiros e aos estrangeiros residentes no País a inviolabilidade do direito à vida, à liberdade, à igualdade, à segurança e à propriedade.\"\n  ],\n  \"ground_truth\": \"Direitos fundamentais são direitos básicos previstos na Constituição Federal que garantem a dignidade humana.\"\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/api/v1/evaluation/evaluate",
+          "host": ["{{base_url}}"],
+          "path": ["api", "v1", "evaluation", "evaluate"]
+        },
+        "description": "Avaliar qualidade de uma resposta usando Ragas"
+      }
+    },
+    {
+      "name": "Evaluation Summary",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/api/v1/evaluation/summary?days=7",
+          "host": ["{{base_url}}"],
+          "path": ["api", "v1", "evaluation", "summary"],
+          "query": [
+            {
+              "key": "days",
+              "value": "7"
+            }
+          ]
+        },
+        "description": "Resumo das avaliações dos últimos 7 dias"
+      }
+    },
+    {
+      "name": "Available Metrics",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/api/v1/evaluation/metrics",
+          "host": ["{{base_url}}"],
+          "path": ["api", "v1", "evaluation", "metrics"]
+        },
+        "description": "Métricas disponíveis para avaliação"
+      }
+    }
+  ]
+}
