@@ -119,125 +119,136 @@ module "cloud_sql" {
   readonly_db_password = "ReadOnly2024Dev!"
 }
 
-# Redis (Memorystore)
-module "redis" {
-  source = "../../modules/memorystore"
-  
-  project_id   = var.project_id
-  region       = var.region
-  environment  = var.environment
-  
-  # Dev usa Redis básico
-  tier          = "BASIC"
-  memory_size_gb = 1
-  redis_version  = "REDIS_7_0"
-}
+# TODO: Implementar módulos adicionais conforme necessário
+# Comentados temporariamente até serem implementados
 
-# Load Balancer
-module "load_balancer" {
-  source = "../../modules/load-balancer"
-  
-  project_id   = var.project_id
-  region       = var.region
-  environment  = var.environment
-  
-  # SSL Certificate
-  managed_ssl_certificate_domains = [
-    "dev.direito-lux.com.br"
-  ]
-}
+# # Redis (Memorystore)
+# module "redis" {
+#   source = "../../modules/memorystore"
+#   
+#   project_id   = var.project_id
+#   region       = var.region
+#   environment  = var.environment
+#   
+#   # Dev usa Redis básico
+#   tier          = "BASIC"
+#   memory_size_gb = 1
+#   redis_version  = "REDIS_7_0"
+# }
 
-# IAM & Service Accounts
-module "iam" {
-  source = "../../modules/iam"
-  
-  project_id   = var.project_id
-  environment  = var.environment
-  
-  service_accounts = {
-    gke_nodes = {
-      display_name = "GKE Nodes SA"
-      roles = [
-        "roles/logging.logWriter",
-        "roles/monitoring.metricWriter",
-        "roles/monitoring.viewer"
-      ]
-    }
-    workload_identity = {
-      display_name = "Workload Identity SA"
-      roles = [
-        "roles/cloudsql.client",
-        "roles/redis.editor",
-        "roles/secretmanager.secretAccessor"
-      ]
-    }
-  }
-}
+# # Load Balancer
+# module "load_balancer" {
+#   source = "../../modules/load-balancer"
+#   
+#   project_id   = var.project_id
+#   region       = var.region
+#   environment  = var.environment
+#   
+#   # SSL Certificate
+#   managed_ssl_certificate_domains = [
+#     "dev.direito-lux.com.br"
+#   ]
+# }
 
-# Secrets Manager
-module "secrets" {
-  source = "../../modules/secrets"
-  
-  project_id   = var.project_id
-  environment  = var.environment
-  
-  secrets = {
-    db_password = {
-      description = "PostgreSQL password"
-    }
-    redis_password = {
-      description = "Redis password"
-    }
-    keycloak_admin_password = {
-      description = "Keycloak admin password"
-    }
-    openai_api_key = {
-      description = "OpenAI API key"
-    }
-  }
-}
+# # IAM & Service Accounts
+# module "iam" {
+#   source = "../../modules/iam"
+#   
+#   project_id   = var.project_id
+#   environment  = var.environment
+#   
+#   service_accounts = {
+#     gke_nodes = {
+#       display_name = "GKE Nodes SA"
+#       roles = [
+#         "roles/logging.logWriter",
+#         "roles/monitoring.metricWriter",
+#         "roles/monitoring.viewer"
+#       ]
+#     }
+#     workload_identity = {
+#       display_name = "Workload Identity SA"
+#       roles = [
+#         "roles/cloudsql.client",
+#         "roles/redis.editor",
+#         "roles/secretmanager.secretAccessor"
+#       ]
+#     }
+#   }
+# }
 
-# Monitoring & Logging
-module "monitoring" {
-  source = "../../modules/monitoring"
-  
-  project_id   = var.project_id
-  environment  = var.environment
-  
-  # Dev tem alertas mais relaxados
-  alert_config = {
-    cpu_threshold    = 80
-    memory_threshold = 85
-    disk_threshold   = 90
-  }
-}
+# # Secrets Manager
+# module "secrets" {
+#   source = "../../modules/secrets"
+#   
+#   project_id   = var.project_id
+#   environment  = var.environment
+#   
+#   secrets = {
+#     db_password = {
+#       description = "PostgreSQL password"
+#     }
+#     redis_password = {
+#       description = "Redis password"
+#     }
+#     keycloak_admin_password = {
+#       description = "Keycloak admin password"
+#     }
+#     openai_api_key = {
+#       description = "OpenAI API key"
+#     }
+#   }
+# }
+
+# # Monitoring & Logging
+# module "monitoring" {
+#   source = "../../modules/monitoring"
+#   
+#   project_id   = var.project_id
+#   environment  = var.environment
+#   
+#   # Dev tem alertas mais relaxados
+#   alert_config = {
+#     cpu_threshold    = 80
+#     memory_threshold = 85
+#     disk_threshold   = 90
+#   }
+# }
 
 # Outputs
 output "gke_cluster_name" {
-  value = module.gke_cluster.cluster_name
+  description = "GKE cluster name"
+  value       = module.gke_cluster.cluster_name
 }
 
 output "gke_cluster_endpoint" {
-  value     = module.gke_cluster.endpoint
-  sensitive = true
+  description = "GKE cluster endpoint"
+  value       = module.gke_cluster.endpoint
+  sensitive   = true
 }
 
 output "cloud_sql_instance_name" {
-  value = module.cloud_sql.instance_name
+  description = "Cloud SQL instance name"
+  value       = module.cloud_sql.instance_name
 }
 
 output "cloud_sql_connection_name" {
-  value = module.cloud_sql.instance_connection_name
+  description = "Cloud SQL connection name"
+  value       = module.cloud_sql.instance_connection_name
 }
 
 output "cloud_sql_private_ip" {
-  value = module.cloud_sql.private_ip_address
+  description = "Cloud SQL private IP"
+  value       = module.cloud_sql.private_ip_address
 }
 
-output "redis_host" {
-  value = module.redis.host
-}
+# TODO: Habilitar quando módulos estiverem implementados
+# output "redis_host" {
+#   description = "Redis host"
+#   value       = module.redis.host
+# }
 
-output "load_balancer_ip" {
-  value = module.load_balancer.external_ip
-}
+# output "load_balancer_ip" {
+#   description = "Load balancer external IP"
+#   value       = module.load_balancer.external_ip
+# }
