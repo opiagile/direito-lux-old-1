@@ -128,7 +128,7 @@ func (ts *TenantService) CreateTenant(ctx context.Context, req *CreateTenantRequ
 	}
 
 	// Create admin user in Keycloak
-	userID, err := ts.keycloakClient.CreateUser(ctx, 
+	userID, err := ts.keycloakClient.CreateUser(ctx,
 		req.AdminUser.Email,
 		req.AdminUser.FirstName,
 		req.AdminUser.LastName,
@@ -277,7 +277,7 @@ func (ts *TenantService) ListTenants(ctx context.Context, offset, limit int, sta
 	var total int64
 
 	query := ts.db.Model(&domain.Tenant{})
-	
+
 	if status != "" {
 		query = query.Where("status = ?", status)
 	}

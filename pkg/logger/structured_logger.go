@@ -28,18 +28,18 @@ type StructuredLogger struct {
 // NewLogger creates a new structured logger with optional Logstash output
 func NewLogger(level string) Logger {
 	config := zap.NewProductionConfig()
-	
+
 	// Set log level
 	var logLevel zapcore.Level
 	if err := logLevel.UnmarshalText([]byte(level)); err != nil {
 		logLevel = zapcore.InfoLevel
 	}
 	config.Level = zap.NewAtomicLevelAt(logLevel)
-	
+
 	// Custom encoder config for structured logging
 	config.EncoderConfig = zapcore.EncoderConfig{
 		TimeKey:        "timestamp",
-		LevelKey:       "level", 
+		LevelKey:       "level",
 		NameKey:        "logger",
 		CallerKey:      "caller",
 		FunctionKey:    zapcore.OmitKey,
@@ -51,14 +51,14 @@ func NewLogger(level string) Logger {
 		EncodeDuration: zapcore.StringDurationEncoder,
 		EncodeCaller:   zapcore.ShortCallerEncoder,
 	}
-	
+
 	// Output to stdout by default
 	config.OutputPaths = []string{"stdout"}
 	config.ErrorOutputPaths = []string{"stderr"}
-	
+
 	// Build core logger
 	cores := []zapcore.Core{}
-	
+
 	// Console output
 	consoleEncoder := zapcore.NewJSONEncoder(config.EncoderConfig)
 	consoleCore := zapcore.NewCore(
@@ -67,7 +67,7 @@ func NewLogger(level string) Logger {
 		config.Level,
 	)
 	cores = append(cores, consoleCore)
-	
+
 	// Logstash output (if configured)
 	logstashHost := os.Getenv("LOGSTASH_HOST")
 	if logstashHost != "" {
@@ -75,10 +75,10 @@ func NewLogger(level string) Logger {
 			cores = append(cores, logstashCore)
 		}
 	}
-	
+
 	// Combine cores
 	core := zapcore.NewTee(cores...)
-	
+
 	// Add service context
 	logger := zap.New(core, zap.AddCaller(), zap.AddCallerSkip(1)).With(
 		zap.String("service", "direito-lux-consulta"),
@@ -86,7 +86,7 @@ func NewLogger(level string) Logger {
 		zap.String("version", "1.0.0"),
 		zap.String("environment", getEnv("GIN_MODE", "development")),
 	)
-	
+
 	return &StructuredLogger{zap: logger}
 }
 
@@ -99,13 +99,13 @@ func createLogstashCore(logstashHost string, encoderConfig zapcore.EncoderConfig
 		fmt.Printf("Warning: Could not connect to Logstash at %s: %v\n", logstashHost, err)
 		return nil
 	}
-	
+
 	// Create TCP writer
 	writer := &tcpWriter{conn: conn, address: logstashHost}
-	
+
 	// Create encoder for Logstash (JSON format)
 	encoder := zapcore.NewJSONEncoder(encoderConfig)
-	
+
 	return zapcore.NewCore(encoder, zapcore.AddSync(writer), level)
 }
 
@@ -124,7 +124,7 @@ func (w *tcpWriter) Write(p []byte) (n int, err error) {
 		}
 		w.conn = conn
 	}
-	
+
 	return w.conn.Write(append(p, '\n'))
 }
 
@@ -162,7 +162,7 @@ func (l *StructuredLogger) With(fields ...interface{}) Logger {
 // parseFields converts key-value pairs to zap.Field
 func (l *StructuredLogger) parseFields(fields ...interface{}) []zap.Field {
 	var zapFields []zap.Field
-	
+
 	for i := 0; i < len(fields); i += 2 {
 		if i+1 < len(fields) {
 			key := fmt.Sprintf("%v", fields[i])
@@ -170,7 +170,7 @@ func (l *StructuredLogger) parseFields(fields ...interface{}) []zap.Field {
 			zapFields = append(zapFields, zap.Any(key, value))
 		}
 	}
-	
+
 	return zapFields
 }
 

@@ -78,7 +78,7 @@ func GetProfile() gin.HandlerFunc {
 		// TODO: Fetch user profile from database
 		c.JSON(http.StatusOK, gin.H{
 			"data": gin.H{
-				"id": userID,
+				"id":      userID,
 				"message": "Profile endpoint - to be implemented",
 			},
 		})

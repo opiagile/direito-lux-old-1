@@ -9,12 +9,12 @@ import (
 )
 
 type Config struct {
-	Server         ServerConfig
-	Database       DatabaseConfig
-	Redis          RedisConfig
-	Keycloak       KeycloakConfig
-	JWT            JWTConfig
-	Logger         LoggerConfig
+	Server          ServerConfig
+	Database        DatabaseConfig
+	Redis           RedisConfig
+	Keycloak        KeycloakConfig
+	JWT             JWTConfig
+	Logger          LoggerConfig
 	ConsultaService ConsultaServiceConfig
 }
 
@@ -53,8 +53,8 @@ type KeycloakConfig struct {
 }
 
 type JWTConfig struct {
-	PublicKeyPath  string
-	CacheDuration  time.Duration
+	PublicKeyPath   string
+	CacheDuration   time.Duration
 	ClockSkewLeeway time.Duration
 }
 
@@ -130,7 +130,7 @@ func setDefaults() {
 	viper.SetDefault("logger.level", "info")
 	viper.SetDefault("logger.encoding", "json")
 	viper.SetDefault("logger.outputPath", "stdout")
-	
+
 	// Consulta Service defaults
 	viper.SetDefault("consultaService.port", "9002")
 }

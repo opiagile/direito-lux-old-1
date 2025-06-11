@@ -9,13 +9,13 @@ import (
 type CircuitBreaker interface {
 	// Execute runs the given function with circuit breaker protection
 	Execute(func() (interface{}, error)) (interface{}, error)
-	
+
 	// State returns the current state of the circuit breaker
 	State() State
-	
+
 	// Counts returns the current counts
 	Counts() Counts
-	
+
 	// Name returns the circuit breaker name
 	Name() string
 }
@@ -38,7 +38,7 @@ func NewCircuitBreaker(config Config) CircuitBreaker {
 		Timeout:     config.Timeout,
 		ReadyToTrip: config.ReadyToTrip,
 	}
-	
+
 	return &circuitBreakerImpl{
 		cb: NewCircuitBreakerInternal(settings),
 	}

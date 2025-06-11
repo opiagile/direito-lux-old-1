@@ -301,7 +301,7 @@ type ErrOpenState struct {
 }
 
 func (e ErrOpenState) Error() string {
-	return fmt.Sprintf("circuit breaker '%s' is %s (remaining: %v)", 
+	return fmt.Sprintf("circuit breaker '%s' is %s (remaining: %v)",
 		e.Name, e.State, e.Remaining.Round(time.Second))
 }
 

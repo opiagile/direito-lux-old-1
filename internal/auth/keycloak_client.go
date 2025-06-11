@@ -14,16 +14,16 @@ import (
 )
 
 type KeycloakClient struct {
-	client       *gocloak.GoCloak
-	config       *config.KeycloakConfig
-	adminToken   *gocloak.JWT
-	tokenMutex   sync.RWMutex
+	client        *gocloak.GoCloak
+	config        *config.KeycloakConfig
+	adminToken    *gocloak.JWT
+	tokenMutex    sync.RWMutex
 	lastTokenTime time.Time
 }
 
 func NewKeycloakClient(cfg *config.KeycloakConfig) *KeycloakClient {
 	client := gocloak.NewClient(cfg.BaseURL)
-	
+
 	return &KeycloakClient{
 		client: client,
 		config: cfg,
@@ -80,7 +80,7 @@ func (kc *KeycloakClient) CreateTenantGroup(ctx context.Context, tenantName stri
 		return "", fmt.Errorf("failed to create tenant group: %w", err)
 	}
 
-	logger.Info("Created tenant group", 
+	logger.Info("Created tenant group",
 		zap.String("tenant", tenantName),
 		zap.String("groupID", groupID))
 
@@ -104,7 +104,7 @@ func (kc *KeycloakClient) CreateUser(ctx context.Context, email, firstName, last
 		Groups:        &[]string{tenantGroupID},
 		Attributes: &map[string][]string{
 			"tenant_group_id": {tenantGroupID},
-			"role":           {role},
+			"role":            {role},
 		},
 	}
 
