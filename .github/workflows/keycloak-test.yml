@@ -24,14 +24,14 @@ jobs:
 
       - name: Start Keycloak stack
         run: |
-          docker-compose up -d
+          docker compose up -d
           echo "Waiting for services to be healthy..."
-          timeout 300 bash -c 'until docker-compose ps | grep -E "(healthy|running)" | wc -l | grep -q "5"; do sleep 5; done'
+          timeout 300 bash -c 'until docker compose ps | grep -E "(healthy|running)" | wc -l | grep -q "5"; do sleep 5; done'
 
       - name: Check services health
         run: |
-          docker-compose ps
-          docker-compose logs --tail=50
+          docker compose ps
+          docker compose logs --tail=50
 
       - name: Run Keycloak setup script
         run: |
@@ -75,7 +75,7 @@ jobs:
       - name: Export logs on failure
         if: failure()
         run: |
-          docker-compose logs > keycloak-logs.txt
+          docker compose logs > keycloak-logs.txt
           
       - name: Upload logs
         if: failure()
@@ -87,4 +87,4 @@ jobs:
       - name: Stop services
         if: always()
         run: |
-          docker-compose down -v
+          docker compose down -v

@@ -140,7 +140,7 @@ jobs:
       
       - name: Authenticate to Google Cloud
         uses: google-github-actions/auth@v2
-        if: ${{ secrets.GCP_SA_KEY_DEV != '' }}
+        if: secrets.GCP_SA_KEY_DEV != ''
         with:
           credentials_json: ${{ secrets.GCP_SA_KEY_DEV }}
       
@@ -218,7 +218,7 @@ jobs:
       
       - name: Authenticate to Google Cloud
         uses: google-github-actions/auth@v1
-        if: ${{ secrets.GCP_SA_KEY_STAGING != '' }}
+        if: secrets.GCP_SA_KEY_STAGING != ''
         with:
           credentials_json: ${{ secrets.GCP_SA_KEY_STAGING }}
       
@@ -273,7 +273,7 @@ jobs:
       
       - name: Authenticate to Google Cloud
         uses: google-github-actions/auth@v1
-        if: ${{ secrets.GCP_SA_KEY_PROD != '' }}
+        if: secrets.GCP_SA_KEY_PROD != ''
         with:
           credentials_json: ${{ secrets.GCP_SA_KEY_PROD }}
       
