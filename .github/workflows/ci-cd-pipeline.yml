@@ -20,10 +20,11 @@ permissions:
   checks: write
 
 env:
-  REGISTRY: gcr.io
+  REGISTRY: us-central1-docker.pkg.dev
   PROJECT_ID_DEV: direito-lux-dev
   PROJECT_ID_STAGING: direito-lux-staging
   PROJECT_ID_PROD: direito-lux-prod
+  REPOSITORY: direito-lux
   GO_VERSION: '1.21'
   PYTHON_VERSION: '3.11'
 
@@ -141,9 +142,11 @@ jobs:
           create_credentials_file: true
           export_environment_variables: true
       
-      - name: Configure Docker for GCR
+      - name: Configure Docker for Artifact Registry
         if: vars.ENABLE_GCP_DEPLOY == 'true'
-        run: gcloud auth configure-docker gcr.io
+        run: |
+          gcloud auth configure-docker us-central1-docker.pkg.dev
+          gcloud config set project ${{ env.PROJECT_ID_DEV }}
       
       - name: Build and push image
         if: vars.ENABLE_GCP_DEPLOY == 'true'
@@ -153,8 +156,8 @@ jobs:
           file: ./Dockerfile
           push: true
           tags: |
-            ${{ env.REGISTRY }}/${{ env.PROJECT_ID_DEV }}/direito-lux:${{ github.sha }}
-            ${{ env.REGISTRY }}/${{ env.PROJECT_ID_DEV }}/direito-lux:latest
+            ${{ env.REGISTRY }}/${{ env.PROJECT_ID_DEV }}/${{ env.REPOSITORY }}/direito-lux:${{ github.sha }}
+            ${{ env.REGISTRY }}/${{ env.PROJECT_ID_DEV }}/${{ env.REPOSITORY }}/direito-lux:latest
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
