@@ -79,13 +79,13 @@ jobs:
       - name: Install dependencies
         run: |
           cd services/ia-juridica
-          pip install -r requirements-simple.txt
-          pip install pytest pytest-cov pytest-asyncio
+          # Install test dependencies only
+          pip install fastapi uvicorn pytest pytest-cov pytest-asyncio httpx
       
       - name: Run tests
         run: |
           cd services/ia-juridica
-          pytest --cov=app --cov-report=html
+          pytest tests/ --cov-report=html
       
       - name: Upload coverage
         uses: actions/upload-artifact@v4
@@ -111,12 +111,12 @@ jobs:
           format: 'sarif'
           output: 'trivy-results.sarif'
       
-      - name: Upload Trivy scan results
-        uses: github/codeql-action/upload-sarif@v3
+      - name: Archive Trivy scan results
+        uses: actions/upload-artifact@v4
         if: always()
-        continue-on-error: true
         with:
-          sarif_file: 'trivy-results.sarif'
+          name: trivy-results
+          path: trivy-results.sarif
 
   # ========== Build Docker Images ==========
   build-images:
