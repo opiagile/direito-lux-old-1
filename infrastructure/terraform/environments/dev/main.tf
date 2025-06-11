@@ -75,6 +75,31 @@ module "gke_cluster" {
   enable_private_cluster = false  # Dev pode ser público
 }
 
+# VPC Network
+resource "google_compute_network" "vpc" {
+  name                    = "${var.environment}-vpc"
+  auto_create_subnetworks = false
+  project                 = var.project_id
+}
+
+resource "google_compute_subnetwork" "subnet" {
+  name          = "${var.environment}-subnet"
+  ip_cidr_range = "10.0.0.0/16"
+  region        = var.region
+  network       = google_compute_network.vpc.id
+  project       = var.project_id
+
+  secondary_ip_range {
+    range_name    = "pods"
+    ip_cidr_range = "10.1.0.0/16"
+  }
+
+  secondary_ip_range {
+    range_name    = "services"
+    ip_cidr_range = "10.2.0.0/16"
+  }
+}
+
 # Cloud SQL (PostgreSQL)
 module "cloud_sql" {
   source = "../../modules/cloud-sql"
@@ -82,18 +107,16 @@ module "cloud_sql" {
   project_id   = var.project_id
   region       = var.region
   environment  = var.environment
+  vpc_network  = google_compute_network.vpc.id
   
   # Dev usa instância menor
-  database_version = "POSTGRES_15"
-  tier            = "db-f1-micro"
-  disk_size       = 10
+  db_tier               = "db-f1-micro"
+  disk_size            = 20
+  disk_autoresize_limit = 100
   
-  # Databases
-  databases = [
-    "keycloak",
-    "direito_lux",
-    "kong"
-  ]
+  # Senhas (usar Secret Manager em produção)
+  app_db_password      = "DireitoLux2024Dev!"
+  readonly_db_password = "ReadOnly2024Dev!"
 }
 
 # Redis (Memorystore)
@@ -199,8 +222,16 @@ output "gke_cluster_endpoint" {
   sensitive = true
 }
 
+output "cloud_sql_instance_name" {
+  value = module.cloud_sql.instance_name
+}
+
 output "cloud_sql_connection_name" {
-  value = module.cloud_sql.connection_name
+  value = module.cloud_sql.instance_connection_name
+}
+
+output "cloud_sql_private_ip" {
+  value = module.cloud_sql.private_ip_address
 }
 
 output "redis_host" {

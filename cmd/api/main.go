@@ -12,6 +12,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/opiagile/direito-lux/internal/auth"
 	"github.com/opiagile/direito-lux/internal/config"
+	"github.com/opiagile/direito-lux/internal/database"
 	"github.com/opiagile/direito-lux/internal/domain"
 	"github.com/opiagile/direito-lux/internal/handlers"
 	"github.com/opiagile/direito-lux/internal/middleware"
@@ -134,23 +135,13 @@ func initDatabase(cfg *config.Config) (*gorm.DB, error) {
 		return nil, fmt.Errorf("failed to connect to database: %w", err)
 	}
 
-	// Run migrations
-	if err := db.AutoMigrate(
-		&domain.Tenant{},
-		&domain.Plan{},
-		&domain.Subscription{},
-		&domain.User{},
-		&domain.AuditLog{},
-		&domain.APIKey{},
-	); err != nil {
+	// Run migrations using the new migration system
+	migrationManager := database.NewMigrationManager(db)
+	if err := migrationManager.RunMigrations(); err != nil {
 		return nil, fmt.Errorf("failed to run migrations: %w", err)
 	}
 
-	// Seed initial data
-	if err := seedDatabase(db); err != nil {
-		logger.Warn("Failed to seed database", zap.Error(err))
-	}
-
+	logger.Info("Database initialized successfully")
 	return db, nil
 }
 
@@ -249,92 +240,3 @@ func setupRouter(
 	return router
 }
 
-func seedDatabase(db *gorm.DB) error {
-	// Check if plans already exist
-	var count int64
-	db.Model(&domain.Plan{}).Count(&count)
-	if count > 0 {
-		return nil
-	}
-
-	// Create default plans
-	plans := []domain.Plan{
-		{
-			Name:         "starter",
-			DisplayName:  "Starter",
-			Description:  "Ideal para advogados autônomos",
-			Price:        99.90,
-			Currency:     "BRL",
-			BillingCycle: domain.BillingCycleMonthly,
-			Features: map[string]interface{}{
-				"basic_features": true,
-				"email_support":  true,
-			},
-			Limits: domain.PlanLimits{
-				MaxUsers:         1,
-				MaxClients:       50,
-				MaxCases:         100,
-				MaxStorageGB:     10,
-				MaxAPICallsMonth: 1000,
-				AIRequestsMonth:  100,
-				MessagesMonth:    500,
-			},
-		},
-		{
-			Name:         "professional",
-			DisplayName:  "Professional",
-			Description:  "Para pequenos escritórios",
-			Price:        299.90,
-			Currency:     "BRL",
-			BillingCycle: domain.BillingCycleMonthly,
-			Features: map[string]interface{}{
-				"all_features":     true,
-				"priority_support": true,
-				"api_access":       true,
-			},
-			Limits: domain.PlanLimits{
-				MaxUsers:          5,
-				MaxClients:        500,
-				MaxCases:          1000,
-				MaxStorageGB:      50,
-				MaxAPICallsMonth:  10000,
-				AIRequestsMonth:   1000,
-				MessagesMonth:     5000,
-				AllowCustomDomain: true,
-			},
-		},
-		{
-			Name:         "enterprise",
-			DisplayName:  "Enterprise",
-			Description:  "Para grandes escritórios",
-			Price:        999.90,
-			Currency:     "BRL",
-			BillingCycle: domain.BillingCycleMonthly,
-			Features: map[string]interface{}{
-				"all_features":      true,
-				"dedicated_support": true,
-				"api_access":        true,
-				"white_label":       true,
-			},
-			Limits: domain.PlanLimits{
-				MaxUsers:          -1, // unlimited
-				MaxClients:        -1,
-				MaxCases:          -1,
-				MaxStorageGB:      500,
-				MaxAPICallsMonth:  -1,
-				AIRequestsMonth:   10000,
-				MessagesMonth:     -1,
-				AllowCustomDomain: true,
-			},
-		},
-	}
-
-	for _, plan := range plans {
-		if err := db.Create(&plan).Error; err != nil {
-			return err
-		}
-	}
-
-	logger.Info("Database seeded with default plans")
-	return nil
-}

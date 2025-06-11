@@ -240,7 +240,7 @@ jobs:
                   - name: ENVIRONMENT
                     value: "dev"
                   - name: DEMO_MODE
-                    value: "true"
+                    value: "false"
                   - name: DIREITO_LUX_SERVER_PORT
                     value: "8080"
                   - name: DIREITO_LUX_DATABASE_HOST
@@ -333,6 +333,53 @@ jobs:
           cluster_name: direito-lux-staging
           location: us-central1
       
+      - name: Deploy Cloud SQL Proxy (if needed)
+        if: vars.ENABLE_GCP_DEPLOY == 'true'
+        run: |
+          # Deploy Cloud SQL Proxy for secure connection
+          kubectl apply -f - <<EOF
+          apiVersion: apps/v1
+          kind: Deployment
+          metadata:
+            name: cloud-sql-proxy
+            namespace: default
+          spec:
+            replicas: 1
+            selector:
+              matchLabels:
+                app: cloud-sql-proxy
+            template:
+              metadata:
+                labels:
+                  app: cloud-sql-proxy
+              spec:
+                serviceAccountName: workload-identity-sa
+                containers:
+                - name: cloud-sql-proxy
+                  image: gcr.io/cloudsql-docker/gce-proxy:1.35.4
+                  command:
+                    - "/cloud_sql_proxy"
+                    - "-instances=${{ env.PROJECT_ID_STAGING }}:us-central1:staging-postgres=tcp:0.0.0.0:5432"
+                  ports:
+                  - containerPort: 5432
+                  resources:
+                    requests:
+                      memory: "64Mi"
+                      cpu: "50m"
+          ---
+          apiVersion: v1
+          kind: Service
+          metadata:
+            name: cloud-sql-proxy
+            namespace: default
+          spec:
+            selector:
+              app: cloud-sql-proxy
+            ports:
+            - port: 5432
+              targetPort: 5432
+          EOF
+
       - name: Deploy with Helm
         if: vars.ENABLE_GCP_DEPLOY == 'true'
         run: |
@@ -340,6 +387,10 @@ jobs:
             --namespace=default \
             --set environment=staging \
             --set image.tag=${{ github.sha }} \
+            --set database.host=cloud-sql-proxy \
+            --set database.user=direito_lux_app \
+            --set database.password="${{ secrets.STAGING_DB_PASSWORD }}" \
+            --set database.name=direito_lux \
             --values ./helm/direito-lux/values-staging.yaml \
             --wait
       
