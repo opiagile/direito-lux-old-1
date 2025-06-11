@@ -35,7 +35,9 @@ func main() {
 	if err := logger.Init(cfg.Logger.Level, cfg.Logger.Encoding, cfg.Logger.OutputPath); err != nil {
 		panic(fmt.Errorf("failed to initialize logger: %w", err))
 	}
-	defer logger.Sync()
+	defer func() {
+		_ = logger.Sync()
+	}()
 
 	logger.Info("Starting Direito Lux API",
 		zap.String("version", "1.0.0"),

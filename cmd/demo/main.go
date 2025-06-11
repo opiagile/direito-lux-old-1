@@ -179,7 +179,10 @@ func main() {
 	// Mock tenant creation demo
 	router.POST("/api/v1/demo/tenant", func(c *gin.Context) {
 		var req map[string]interface{}
-		c.ShouldBindJSON(&req)
+		if err := c.ShouldBindJSON(&req); err != nil {
+			// Ignore error for demo purposes
+			req = make(map[string]interface{})
+		}
 		
 		c.JSON(http.StatusOK, gin.H{
 			"message": "Demo - Tenant creation simulation",
@@ -303,5 +306,7 @@ func main() {
 	router.Static("/static", "./static")
 	
 	// Start server
-	router.Run(":9000")
+	if err := router.Run(":9000"); err != nil {
+		panic(err)
+	}
 }

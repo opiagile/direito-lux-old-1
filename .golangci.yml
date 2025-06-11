@@ -3,12 +3,6 @@
 run:
   timeout: 5m
   tests: false
-  skip-dirs:
-    - bin
-    - vendor
-    - testdata
-  skip-files:
-    - ".*_test.go"
 
 linters:
   enable:
