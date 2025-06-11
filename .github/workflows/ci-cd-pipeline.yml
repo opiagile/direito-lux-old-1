@@ -145,11 +145,11 @@ jobs:
           credentials_json: ${{ secrets.GCP_SA_KEY_DEV }}
       
       - name: Configure Docker for GCR
-        if: ${{ secrets.GCP_SA_KEY_DEV != '' }}
+        if: vars.ENABLE_GCP_DEPLOY == 'true'
         run: gcloud auth configure-docker
       
       - name: Build and push image
-        if: ${{ secrets.GCP_SA_KEY_DEV != '' }}
+        if: vars.ENABLE_GCP_DEPLOY == 'true'
         uses: docker/build-push-action@v5
         with:
           context: .
@@ -224,13 +224,13 @@ jobs:
       
       - name: Get GKE credentials
         uses: google-github-actions/get-gke-credentials@v1
-        if: ${{ secrets.GCP_SA_KEY_STAGING != '' }}
+        if: vars.ENABLE_GCP_DEPLOY == 'true'
         with:
           cluster_name: direito-lux-staging
           location: us-central1
       
       - name: Deploy with Helm
-        if: ${{ secrets.GCP_SA_KEY_STAGING != '' }}
+        if: vars.ENABLE_GCP_DEPLOY == 'true'
         run: |
           helm upgrade --install direito-lux ./helm/direito-lux \
             --namespace=default \
@@ -279,13 +279,13 @@ jobs:
       
       - name: Get GKE credentials
         uses: google-github-actions/get-gke-credentials@v1
-        if: ${{ secrets.GCP_SA_KEY_PROD != '' }}
+        if: vars.ENABLE_GCP_DEPLOY == 'true'
         with:
           cluster_name: direito-lux-prod
           location: us-central1
       
       - name: Create release tag
-        if: ${{ secrets.GCP_SA_KEY_PROD != '' }}
+        if: vars.ENABLE_GCP_DEPLOY == 'true'
         run: |
           git config user.name github-actions
           git config user.email github-actions@github.com
@@ -293,7 +293,7 @@ jobs:
           git push origin --tags
       
       - name: Blue-Green Deployment
-        if: ${{ secrets.GCP_SA_KEY_PROD != '' }}
+        if: vars.ENABLE_GCP_DEPLOY == 'true'
         run: |
           # Deploy to green environment
           helm upgrade --install direito-lux-green ./helm/direito-lux \
