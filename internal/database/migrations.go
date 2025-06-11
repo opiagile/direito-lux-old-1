@@ -40,10 +40,10 @@ func NewMigrationManager(db *gorm.DB) *MigrationManager {
 		db:         db,
 		migrations: make([]Migration, 0),
 	}
-	
+
 	// Registra todas as migrations
 	manager.registerMigrations()
-	
+
 	return manager
 }
 
@@ -161,7 +161,7 @@ func (m *MigrationManager) RunMigrations() error {
 			continue
 		}
 
-		logger.Info("Applying migration", 
+		logger.Info("Applying migration",
 			zap.String("version", migration.Version),
 			zap.String("description", migration.Description))
 
@@ -229,7 +229,7 @@ func (m *MigrationManager) RollbackMigration(version string) error {
 		return fmt.Errorf("migration %s not found", version)
 	}
 
-	logger.Warn("Rolling back migration", 
+	logger.Warn("Rolling back migration",
 		zap.String("version", version),
 		zap.String("description", migration.Description))
 

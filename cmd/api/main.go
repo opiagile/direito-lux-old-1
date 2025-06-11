@@ -13,7 +13,6 @@ import (
 	"github.com/opiagile/direito-lux/internal/auth"
 	"github.com/opiagile/direito-lux/internal/config"
 	"github.com/opiagile/direito-lux/internal/database"
-	"github.com/opiagile/direito-lux/internal/domain"
 	"github.com/opiagile/direito-lux/internal/handlers"
 	"github.com/opiagile/direito-lux/internal/middleware"
 	"github.com/opiagile/direito-lux/internal/repository"
@@ -46,7 +45,7 @@ func main() {
 
 	// Check if running in demo/healthcheck mode
 	demoMode := os.Getenv("DEMO_MODE") == "true" || os.Getenv("HEALTHCHECK_ONLY") == "true"
-	
+
 	var db *gorm.DB
 	if !demoMode {
 		// Initialize database
@@ -63,7 +62,7 @@ func main() {
 	var keycloakClient *auth.KeycloakClient
 	var repos *repository.Repositories
 	var tenantService *services.TenantService
-	
+
 	if !demoMode {
 		// Initialize Redis
 		redisClient = initRedis(cfg)
@@ -226,17 +225,16 @@ func setupRouter(
 					admin.GET("/tenants/:id/usage", tenantHandler.GetTenantUsage)
 				}
 
-			// User profile
-			protected.GET("/profile", handlers.GetProfile())
-			protected.PUT("/profile", handlers.UpdateProfile())
+				// User profile
+				protected.GET("/profile", handlers.GetProfile())
+				protected.PUT("/profile", handlers.UpdateProfile())
 
-			// Add more protected routes as needed
+				// Add more protected routes as needed
+			}
 		}
-	}
 	} else {
 		logger.Info("Running in demo mode - API routes disabled")
 	}
 
 	return router
 }
-
