@@ -123,7 +123,7 @@ jobs:
     name: Build Docker Images
     needs: [test-go, test-python, security-scan]
     runs-on: ubuntu-latest
-    if: github.event_name == 'push'
+    if: github.event_name == 'push' && vars.ENABLE_GCP_DEPLOY == 'true'
     
     strategy:
       matrix:
@@ -166,6 +166,7 @@ jobs:
     name: Deploy to Development
     needs: build-images
     runs-on: ubuntu-latest
+    if: vars.ENABLE_GCP_DEPLOY == 'true'
     environment: development
     
     steps:
@@ -209,6 +210,7 @@ jobs:
     name: Deploy to Homologação
     needs: deploy-dev
     runs-on: ubuntu-latest
+    if: vars.ENABLE_GCP_DEPLOY == 'true'
     environment:
       name: staging
       url: https://homolog.direito-lux.com.br
@@ -264,6 +266,7 @@ jobs:
     name: Deploy to Production
     needs: deploy-staging
     runs-on: ubuntu-latest
+    if: vars.ENABLE_GCP_DEPLOY == 'true'
     environment:
       name: production
       url: https://app.direito-lux.com.br
