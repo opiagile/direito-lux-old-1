@@ -161,12 +161,31 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
+  # ========== Build Success Notification ==========
+  build-success:
+    name: Build Success Notification
+    needs: build-images
+    runs-on: ubuntu-latest
+    if: vars.ENABLE_GCP_DEPLOY == 'true' && vars.ENABLE_GKE_DEPLOY != 'true'
+    
+    steps:
+      - name: Notify build success
+        run: |
+          echo "✅ Docker image built and pushed successfully!"
+          echo "Image: ${{ env.REGISTRY }}/${{ env.PROJECT_ID_DEV }}/${{ env.REPOSITORY }}/direito-lux:${{ github.sha }}"
+          echo "Latest: ${{ env.REGISTRY }}/${{ env.PROJECT_ID_DEV }}/${{ env.REPOSITORY }}/direito-lux:latest"
+          echo ""
+          echo "📋 Next steps:"
+          echo "1. Set ENABLE_GKE_DEPLOY=true in repository variables to enable Kubernetes deployment"
+          echo "2. Create GKE clusters using terraform or gcloud CLI"
+          echo "3. Configure Helm charts for deployment"
+
   # ========== Deploy to DEV ==========
   deploy-dev:
     name: Deploy to Development
     needs: build-images
     runs-on: ubuntu-latest
-    if: vars.ENABLE_GCP_DEPLOY == 'true'
+    if: vars.ENABLE_GCP_DEPLOY == 'true' && vars.ENABLE_GKE_DEPLOY == 'true'
     environment: development
     
     steps:
@@ -210,9 +229,9 @@ jobs:
   # ========== Deploy to HOMOLOGAÇÃO ==========
   deploy-staging:
     name: Deploy to Homologação
-    needs: deploy-dev
+    needs: [build-images]
     runs-on: ubuntu-latest
-    if: vars.ENABLE_GCP_DEPLOY == 'true'
+    if: vars.ENABLE_GCP_DEPLOY == 'true' && vars.ENABLE_GKE_DEPLOY == 'true'
     environment:
       name: staging
       url: https://homolog.direito-lux.com.br
@@ -270,7 +289,7 @@ jobs:
     name: Deploy to Production
     needs: deploy-staging
     runs-on: ubuntu-latest
-    if: vars.ENABLE_GCP_DEPLOY == 'true'
+    if: vars.ENABLE_GCP_DEPLOY == 'true' && vars.ENABLE_GKE_DEPLOY == 'true'
     environment:
       name: production
       url: https://app.direito-lux.com.br
