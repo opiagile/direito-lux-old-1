@@ -21,7 +21,9 @@ permissions:
 
 env:
   REGISTRY: gcr.io
-  PROJECT_ID: direito-lux
+  PROJECT_ID_DEV: direito-lux-dev
+  PROJECT_ID_STAGING: direito-lux-staging
+  PROJECT_ID_PROD: direito-lux-prod
   GO_VERSION: '1.21'
   PYTHON_VERSION: '3.11'
 
@@ -125,13 +127,6 @@ jobs:
     runs-on: ubuntu-latest
     if: github.event_name == 'push' && vars.ENABLE_GCP_DEPLOY == 'true'
     
-    strategy:
-      matrix:
-        service:
-          - auth
-          - consulta
-          - ia-juridica
-    
     steps:
       - uses: actions/checkout@v4
       
@@ -148,7 +143,7 @@ jobs:
       
       - name: Configure Docker for GCR
         if: vars.ENABLE_GCP_DEPLOY == 'true'
-        run: gcloud auth configure-docker
+        run: gcloud auth configure-docker gcr.io
       
       - name: Build and push image
         if: vars.ENABLE_GCP_DEPLOY == 'true'
@@ -158,8 +153,8 @@ jobs:
           file: ./Dockerfile
           push: true
           tags: |
-            ${{ env.REGISTRY }}/${{ env.PROJECT_ID }}/${{ matrix.service }}:${{ github.sha }}
-            ${{ env.REGISTRY }}/${{ env.PROJECT_ID }}/${{ matrix.service }}:latest
+            ${{ env.REGISTRY }}/${{ env.PROJECT_ID_DEV }}/direito-lux:${{ github.sha }}
+            ${{ env.REGISTRY }}/${{ env.PROJECT_ID_DEV }}/direito-lux:latest
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
@@ -331,7 +326,7 @@ jobs:
       
       - name: Database migrations
         run: |
-          kubectl run migrations --image=${{ env.REGISTRY }}/${{ env.PROJECT_ID }}/migrations:${{ github.sha }} \
+          kubectl run migrations --image=${{ env.REGISTRY }}/${{ env.PROJECT_ID_PROD }}/direito-lux:${{ github.sha }} \
             --rm -i --restart=Never \
             --env="DB_CONNECTION=${{ secrets.PROD_DB_CONNECTION }}"
       
