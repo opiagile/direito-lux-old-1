@@ -140,13 +140,16 @@ jobs:
       
       - name: Authenticate to Google Cloud
         uses: google-github-actions/auth@v2
+        if: ${{ secrets.GCP_SA_KEY_DEV != '' }}
         with:
           credentials_json: ${{ secrets.GCP_SA_KEY_DEV }}
       
       - name: Configure Docker for GCR
+        if: ${{ secrets.GCP_SA_KEY_DEV != '' }}
         run: gcloud auth configure-docker
       
       - name: Build and push image
+        if: ${{ secrets.GCP_SA_KEY_DEV != '' }}
         uses: docker/build-push-action@v5
         with:
           context: .
@@ -215,16 +218,19 @@ jobs:
       
       - name: Authenticate to Google Cloud
         uses: google-github-actions/auth@v1
+        if: ${{ secrets.GCP_SA_KEY_STAGING != '' }}
         with:
           credentials_json: ${{ secrets.GCP_SA_KEY_STAGING }}
       
       - name: Get GKE credentials
         uses: google-github-actions/get-gke-credentials@v1
+        if: ${{ secrets.GCP_SA_KEY_STAGING != '' }}
         with:
           cluster_name: direito-lux-staging
           location: us-central1
       
       - name: Deploy with Helm
+        if: ${{ secrets.GCP_SA_KEY_STAGING != '' }}
         run: |
           helm upgrade --install direito-lux ./helm/direito-lux \
             --namespace=default \
@@ -267,16 +273,19 @@ jobs:
       
       - name: Authenticate to Google Cloud
         uses: google-github-actions/auth@v1
+        if: ${{ secrets.GCP_SA_KEY_PROD != '' }}
         with:
           credentials_json: ${{ secrets.GCP_SA_KEY_PROD }}
       
       - name: Get GKE credentials
         uses: google-github-actions/get-gke-credentials@v1
+        if: ${{ secrets.GCP_SA_KEY_PROD != '' }}
         with:
           cluster_name: direito-lux-prod
           location: us-central1
       
       - name: Create release tag
+        if: ${{ secrets.GCP_SA_KEY_PROD != '' }}
         run: |
           git config user.name github-actions
           git config user.email github-actions@github.com
@@ -284,6 +293,7 @@ jobs:
           git push origin --tags
       
       - name: Blue-Green Deployment
+        if: ${{ secrets.GCP_SA_KEY_PROD != '' }}
         run: |
           # Deploy to green environment
           helm upgrade --install direito-lux-green ./helm/direito-lux \
