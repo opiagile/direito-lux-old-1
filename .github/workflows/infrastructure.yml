@@ -1,0 +1,341 @@
+# Direito Lux - Infrastructure Pipeline
+# Gerencia infraestrutura com Terraform
+
+name: Infrastructure
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'infrastructure/**'
+  pull_request:
+    branches:
+      - main
+    paths:
+      - 'infrastructure/**'
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Environment to deploy'
+        required: true
+        default: 'dev'
+        type: choice
+        options:
+          - dev
+          - staging
+          - prod
+      action:
+        description: 'Terraform action'
+        required: true
+        default: 'plan'
+        type: choice
+        options:
+          - plan
+          - apply
+          - destroy
+
+env:
+  TF_VERSION: '1.5.0'
+  TF_VAR_project_id: ${{ secrets.GCP_PROJECT_ID }}
+
+jobs:
+  # ========== Terraform Validation ==========
+  validate:
+    name: Validate Terraform
+    runs-on: ubuntu-latest
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v2
+        with:
+          terraform_version: ${{ env.TF_VERSION }}
+      
+      - name: Terraform Format Check
+        run: |
+          cd infrastructure/terraform
+          terraform fmt -check -recursive
+      
+      - name: Terraform Validate
+        run: |
+          cd infrastructure/terraform/environments/dev
+          terraform init -backend=false
+          terraform validate
+
+  # ========== Plan DEV ==========
+  plan-dev:
+    name: Plan Development
+    needs: validate
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request' || (github.event_name == 'workflow_dispatch' && github.event.inputs.environment == 'dev')
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v2
+        with:
+          terraform_version: ${{ env.TF_VERSION }}
+      
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v1
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY_TERRAFORM }}
+      
+      - name: Terraform Plan
+        run: |
+          cd infrastructure/terraform/environments/dev
+          terraform init
+          terraform plan -var="project_id=${{ secrets.GCP_PROJECT_ID_DEV }}" -out=tfplan
+      
+      - name: Upload plan
+        uses: actions/upload-artifact@v3
+        with:
+          name: tfplan-dev
+          path: infrastructure/terraform/environments/dev/tfplan
+
+  # ========== Apply DEV ==========
+  apply-dev:
+    name: Apply Development
+    needs: plan-dev
+    runs-on: ubuntu-latest
+    environment: terraform-dev
+    if: github.ref == 'refs/heads/main' || (github.event_name == 'workflow_dispatch' && github.event.inputs.action == 'apply')
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v2
+        with:
+          terraform_version: ${{ env.TF_VERSION }}
+      
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v1
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY_TERRAFORM }}
+      
+      - name: Download plan
+        uses: actions/download-artifact@v3
+        with:
+          name: tfplan-dev
+          path: infrastructure/terraform/environments/dev/
+      
+      - name: Terraform Apply
+        run: |
+          cd infrastructure/terraform/environments/dev
+          terraform init
+          terraform apply tfplan
+      
+      - name: Output values
+        run: |
+          cd infrastructure/terraform/environments/dev
+          terraform output -json > outputs.json
+          echo "### Terraform Outputs DEV" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`json" >> $GITHUB_STEP_SUMMARY
+          cat outputs.json >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+
+  # ========== Plan STAGING ==========
+  plan-staging:
+    name: Plan Staging
+    needs: apply-dev
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v2
+        with:
+          terraform_version: ${{ env.TF_VERSION }}
+      
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v1
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY_TERRAFORM }}
+      
+      - name: Terraform Plan
+        run: |
+          cd infrastructure/terraform/environments/staging
+          terraform init
+          terraform plan -var="project_id=${{ secrets.GCP_PROJECT_ID_STAGING }}" -out=tfplan
+      
+      - name: Upload plan
+        uses: actions/upload-artifact@v3
+        with:
+          name: tfplan-staging
+          path: infrastructure/terraform/environments/staging/tfplan
+
+  # ========== Apply STAGING ==========
+  apply-staging:
+    name: Apply Staging
+    needs: plan-staging
+    runs-on: ubuntu-latest
+    environment: terraform-staging
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v2
+        with:
+          terraform_version: ${{ env.TF_VERSION }}
+      
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v1
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY_TERRAFORM }}
+      
+      - name: Download plan
+        uses: actions/download-artifact@v3
+        with:
+          name: tfplan-staging
+          path: infrastructure/terraform/environments/staging/
+      
+      - name: Terraform Apply
+        run: |
+          cd infrastructure/terraform/environments/staging
+          terraform init
+          terraform apply tfplan
+
+  # ========== Plan PRODUCTION ==========
+  plan-production:
+    name: Plan Production
+    needs: apply-staging
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v2
+        with:
+          terraform_version: ${{ env.TF_VERSION }}
+      
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v1
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY_TERRAFORM }}
+      
+      - name: Terraform Plan
+        run: |
+          cd infrastructure/terraform/environments/prod
+          terraform init
+          terraform plan -var="project_id=${{ secrets.GCP_PROJECT_ID_PROD }}" -out=tfplan
+      
+      - name: Upload plan
+        uses: actions/upload-artifact@v3
+        with:
+          name: tfplan-prod
+          path: infrastructure/terraform/environments/prod/tfplan
+
+  # ========== Apply PRODUCTION (Manual) ==========
+  apply-production:
+    name: Apply Production
+    needs: plan-production
+    runs-on: ubuntu-latest
+    environment: terraform-production
+    if: github.event_name == 'workflow_dispatch' && github.event.inputs.environment == 'prod' && github.event.inputs.action == 'apply'
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v2
+        with:
+          terraform_version: ${{ env.TF_VERSION }}
+      
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v1
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY_TERRAFORM }}
+      
+      - name: Download plan
+        uses: actions/download-artifact@v3
+        with:
+          name: tfplan-prod
+          path: infrastructure/terraform/environments/prod/
+      
+      - name: Terraform Apply
+        run: |
+          cd infrastructure/terraform/environments/prod
+          terraform init
+          terraform apply tfplan
+      
+      - name: Notify team
+        uses: 8398a7/action-slack@v3
+        with:
+          status: ${{ job.status }}
+          text: '🏗️ Production infrastructure updated!'
+          webhook_url: ${{ secrets.SLACK_WEBHOOK }}
+
+  # ========== Cost Estimation ==========
+  cost-estimation:
+    name: Cost Estimation
+    needs: validate
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup Infracost
+        uses: infracost/actions/setup@v2
+        with:
+          api-key: ${{ secrets.INFRACOST_API_KEY }}
+      
+      - name: Generate cost estimate
+        run: |
+          cd infrastructure/terraform/environments
+          
+          # Estimate all environments
+          for env in dev staging prod; do
+            cd $env
+            infracost breakdown --path . --format json --out-file /tmp/infracost-$env.json
+            cd ..
+          done
+          
+          # Generate comparison
+          infracost diff --path /tmp/infracost-*.json --format table > cost-estimate.txt
+      
+      - name: Post cost comment
+        uses: actions/github-script@v6
+        with:
+          script: |
+            const fs = require('fs');
+            const cost = fs.readFileSync('cost-estimate.txt', 'utf8');
+            
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: `## 💰 Infrastructure Cost Estimation\n\n\`\`\`\n${cost}\n\`\`\``
+            });
+
+  # ========== Security Scan ==========
+  security-scan:
+    name: Security Scan
+    needs: validate
+    runs-on: ubuntu-latest
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Run Checkov
+        uses: bridgecrewio/checkov-action@master
+        with:
+          directory: infrastructure/terraform
+          framework: terraform
+          output_format: sarif
+          output_file_path: checkov-results.sarif
+      
+      - name: Upload Checkov results
+        uses: github/codeql-action/upload-sarif@v2
+        if: always()
+        with:
+          sarif_file: checkov-results.sarif

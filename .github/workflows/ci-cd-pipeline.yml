@@ -1,0 +1,330 @@
+# Direito Lux - CI/CD Pipeline
+# Fluxo: Build → Dev → Homologação → Produção
+
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches:
+      - main
+      - develop
+  pull_request:
+    branches:
+      - main
+      - develop
+
+env:
+  REGISTRY: gcr.io
+  PROJECT_ID: direito-lux
+  GO_VERSION: '1.21'
+  PYTHON_VERSION: '3.11'
+
+jobs:
+  # ========== CI: Build & Test ==========
+  test-go:
+    name: Test Go Services
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: ${{ env.GO_VERSION }}
+      
+      - name: Cache Go modules
+        uses: actions/cache@v3
+        with:
+          path: ~/go/pkg/mod
+          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+      
+      - name: Run tests
+        run: |
+          go test -v -race -coverprofile=coverage.out ./...
+          go tool cover -html=coverage.out -o coverage.html
+      
+      - name: Upload coverage
+        uses: actions/upload-artifact@v3
+        with:
+          name: go-coverage
+          path: coverage.html
+
+  test-python:
+    name: Test Python Services
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+      
+      - name: Cache pip
+        uses: actions/cache@v3
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
+      
+      - name: Install dependencies
+        run: |
+          cd services/ia-juridica
+          pip install -r requirements-simple.txt
+          pip install pytest pytest-cov pytest-asyncio
+      
+      - name: Run tests
+        run: |
+          cd services/ia-juridica
+          pytest --cov=app --cov-report=html
+      
+      - name: Upload coverage
+        uses: actions/upload-artifact@v3
+        with:
+          name: python-coverage
+          path: services/ia-juridica/htmlcov/
+
+  security-scan:
+    name: Security Scanning
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Run Trivy vulnerability scanner
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: 'fs'
+          scan-ref: '.'
+          format: 'sarif'
+          output: 'trivy-results.sarif'
+      
+      - name: Upload Trivy scan results
+        uses: github/codeql-action/upload-sarif@v2
+        with:
+          sarif_file: 'trivy-results.sarif'
+
+  # ========== Build Docker Images ==========
+  build-images:
+    name: Build Docker Images
+    needs: [test-go, test-python, security-scan]
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push'
+    
+    strategy:
+      matrix:
+        service:
+          - auth
+          - consulta
+          - ia-juridica
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+      
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v1
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
+      
+      - name: Configure Docker for GCR
+        run: gcloud auth configure-docker
+      
+      - name: Build and push image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./services/${{ matrix.service }}/Dockerfile
+          push: true
+          tags: |
+            ${{ env.REGISTRY }}/${{ env.PROJECT_ID }}/${{ matrix.service }}:${{ github.sha }}
+            ${{ env.REGISTRY }}/${{ env.PROJECT_ID }}/${{ matrix.service }}:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  # ========== Deploy to DEV ==========
+  deploy-dev:
+    name: Deploy to Development
+    needs: build-images
+    runs-on: ubuntu-latest
+    environment: development
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v1
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY_DEV }}
+      
+      - name: Get GKE credentials
+        uses: google-github-actions/get-gke-credentials@v1
+        with:
+          cluster_name: direito-lux-dev
+          location: us-central1
+      
+      - name: Deploy with Helm
+        run: |
+          helm upgrade --install direito-lux ./helm/direito-lux \
+            --namespace=default \
+            --set environment=dev \
+            --set image.tag=${{ github.sha }} \
+            --values ./helm/direito-lux/values-dev.yaml \
+            --wait
+      
+      - name: Run smoke tests
+        run: |
+          kubectl run smoke-test --image=curlimages/curl --rm -i --restart=Never -- \
+            curl -f http://direito-lux-gateway/health || exit 1
+      
+      - name: Notify Slack
+        if: always()
+        uses: 8398a7/action-slack@v3
+        with:
+          status: ${{ job.status }}
+          text: 'Deploy DEV ${{ job.status }}'
+          webhook_url: ${{ secrets.SLACK_WEBHOOK }}
+
+  # ========== Deploy to HOMOLOGAÇÃO ==========
+  deploy-staging:
+    name: Deploy to Homologação
+    needs: deploy-dev
+    runs-on: ubuntu-latest
+    environment:
+      name: staging
+      url: https://homolog.direito-lux.com.br
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v1
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY_STAGING }}
+      
+      - name: Get GKE credentials
+        uses: google-github-actions/get-gke-credentials@v1
+        with:
+          cluster_name: direito-lux-staging
+          location: us-central1
+      
+      - name: Deploy with Helm
+        run: |
+          helm upgrade --install direito-lux ./helm/direito-lux \
+            --namespace=default \
+            --set environment=staging \
+            --set image.tag=${{ github.sha }} \
+            --values ./helm/direito-lux/values-staging.yaml \
+            --wait
+      
+      - name: Run integration tests
+        run: |
+          cd tests/integration
+          npm install
+          npm run test:staging
+      
+      - name: Security validation
+        run: |
+          # OWASP ZAP scan
+          docker run -t owasp/zap2docker-stable zap-baseline.py \
+            -t https://homolog.direito-lux.com.br -r zap-report.html
+      
+      - name: Upload test results
+        uses: actions/upload-artifact@v3
+        with:
+          name: staging-test-results
+          path: |
+            tests/integration/results/
+            zap-report.html
+
+  # ========== Deploy to PRODUCTION ==========
+  deploy-production:
+    name: Deploy to Production
+    needs: deploy-staging
+    runs-on: ubuntu-latest
+    environment:
+      name: production
+      url: https://app.direito-lux.com.br
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v1
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY_PROD }}
+      
+      - name: Get GKE credentials
+        uses: google-github-actions/get-gke-credentials@v1
+        with:
+          cluster_name: direito-lux-prod
+          location: us-central1
+      
+      - name: Create release tag
+        run: |
+          git config user.name github-actions
+          git config user.email github-actions@github.com
+          git tag -a v$(date +%Y%m%d-%H%M%S) -m "Production release ${{ github.sha }}"
+          git push origin --tags
+      
+      - name: Blue-Green Deployment
+        run: |
+          # Deploy to green environment
+          helm upgrade --install direito-lux-green ./helm/direito-lux \
+            --namespace=production \
+            --set environment=prod \
+            --set deployment.strategy=green \
+            --set image.tag=${{ github.sha }} \
+            --values ./helm/direito-lux/values-prod.yaml \
+            --wait
+          
+          # Run health checks
+          kubectl run health-check --image=curlimages/curl --rm -i --restart=Never -- \
+            curl -f http://direito-lux-gateway-green/health || exit 1
+          
+          # Switch traffic
+          kubectl patch service direito-lux-gateway \
+            -p '{"spec":{"selector":{"deployment":"green"}}}'
+          
+          # Wait and verify
+          sleep 30
+          
+          # Remove blue deployment
+          helm uninstall direito-lux-blue --namespace=production || true
+      
+      - name: Database migrations
+        run: |
+          kubectl run migrations --image=${{ env.REGISTRY }}/${{ env.PROJECT_ID }}/migrations:${{ github.sha }} \
+            --rm -i --restart=Never \
+            --env="DB_CONNECTION=${{ secrets.PROD_DB_CONNECTION }}"
+      
+      - name: Notify team
+        uses: 8398a7/action-slack@v3
+        with:
+          status: ${{ job.status }}
+          text: |
+            🚀 Production deployment completed!
+            Version: ${{ github.sha }}
+            URL: https://app.direito-lux.com.br
+          webhook_url: ${{ secrets.SLACK_WEBHOOK }}
+
+  # ========== Rollback (Manual Trigger) ==========
+  rollback:
+    name: Rollback Production
+    runs-on: ubuntu-latest
+    if: github.event_name == 'workflow_dispatch'
+    environment: production-rollback
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Rollback deployment
+        run: |
+          helm rollback direito-lux --namespace=production
+      
+      - name: Notify team
+        uses: 8398a7/action-slack@v3
+        with:
+          status: ${{ job.status }}
+          text: '⚠️ Production rollback executed!'
+          webhook_url: ${{ secrets.SLACK_WEBHOOK }}

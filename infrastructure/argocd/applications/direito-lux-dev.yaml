@@ -1,0 +1,188 @@
+# ArgoCD Application - Direito Lux Development
+# GitOps deployment configuration
+
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: direito-lux-dev
+  namespace: argocd
+  labels:
+    environment: development
+    project: direito-lux
+spec:
+  project: default
+  
+  source:
+    repoURL: https://github.com/opiagile/direito-lux.git
+    targetRevision: HEAD
+    path: helm/direito-lux
+    helm:
+      valueFiles:
+        - values-dev.yaml
+      parameters:
+        - name: environment
+          value: dev
+        - name: image.tag
+          value: latest
+        - name: replicas.auth
+          value: "1"
+        - name: replicas.consulta
+          value: "1"
+        - name: replicas.ia-juridica
+          value: "1"
+  
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: direito-lux-dev
+  
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+      allowEmpty: false
+    syncOptions:
+      - CreateNamespace=true
+      - PrunePropagationPolicy=foreground
+      - PruneLast=true
+    retry:
+      limit: 5
+      backoff:
+        duration: 5s
+        factor: 2
+        maxDuration: 3m
+  
+  # Health checks
+  ignoreDifferences:
+    - group: apps
+      kind: Deployment
+      jsonPointers:
+        - /spec/replicas
+  
+  # Notifications
+  notifications:
+    webhook:
+      dev-deploy:
+        url: https://hooks.slack.com/services/YOUR/SLACK/WEBHOOK
+        method: POST
+        body: |
+          {
+            "text": "🚀 Direito Lux DEV deployed successfully!",
+            "attachments": [
+              {
+                "color": "good",
+                "fields": [
+                  {
+                    "title": "Environment",
+                    "value": "Development",
+                    "short": true
+                  },
+                  {
+                    "title": "Revision",
+                    "value": "{{.app.status.sync.revision}}",
+                    "short": true
+                  },
+                  {
+                    "title": "Status",
+                    "value": "{{.app.status.health.status}}",
+                    "short": true
+                  }
+                ]
+              }
+            ]
+          }
+
+---
+# Project for Direito Lux environments
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: direito-lux
+  namespace: argocd
+spec:
+  description: Direito Lux SaaS Jurídico
+  
+  sourceRepos:
+    - https://github.com/opiagile/direito-lux.git
+    - https://charts.helm.sh/stable
+    - https://kubernetes-charts.storage.googleapis.com
+  
+  destinations:
+    - namespace: direito-lux-dev
+      server: https://kubernetes.default.svc
+    - namespace: direito-lux-staging
+      server: https://kubernetes.default.svc
+    - namespace: direito-lux-prod
+      server: https://kubernetes.default.svc
+  
+  clusterResourceWhitelist:
+    - group: ""
+      kind: Namespace
+    - group: "networking.k8s.io"
+      kind: NetworkPolicy
+    - group: "rbac.authorization.k8s.io"
+      kind: ClusterRole
+    - group: "rbac.authorization.k8s.io"
+      kind: ClusterRoleBinding
+  
+  namespaceResourceWhitelist:
+    - group: ""
+      kind: ConfigMap
+    - group: ""
+      kind: Secret
+    - group: ""
+      kind: Service
+    - group: ""
+      kind: ServiceAccount
+    - group: "apps"
+      kind: Deployment
+    - group: "apps"
+      kind: StatefulSet
+    - group: "batch"
+      kind: Job
+    - group: "batch"
+      kind: CronJob
+    - group: "networking.k8s.io"
+      kind: Ingress
+    - group: "autoscaling"
+      kind: HorizontalPodAutoscaler
+  
+  roles:
+    - name: developer
+      description: Developer access
+      policies:
+        - p, proj:direito-lux:developer, applications, get, direito-lux/*, allow
+        - p, proj:direito-lux:developer, applications, sync, direito-lux/*-dev, allow
+      groups:
+        - direito-lux:developers
+    
+    - name: devops
+      description: DevOps full access
+      policies:
+        - p, proj:direito-lux:devops, applications, *, direito-lux/*, allow
+        - p, proj:direito-lux:devops, repositories, *, *, allow
+      groups:
+        - direito-lux:devops
+    
+    - name: production-deployer
+      description: Production deployment access
+      policies:
+        - p, proj:direito-lux:production-deployer, applications, sync, direito-lux/*-prod, allow
+        - p, proj:direito-lux:production-deployer, applications, get, direito-lux/*-prod, allow
+      groups:
+        - direito-lux:production-team
+
+---
+# Repository secret for private repo
+apiVersion: v1
+kind: Secret
+metadata:
+  name: direito-lux-repo
+  namespace: argocd
+  labels:
+    argocd.argoproj.io/secret-type: repository
+type: Opaque
+stringData:
+  type: git
+  url: https://github.com/opiagile/direito-lux.git
+  username: opiagile
+  password: YOUR_GITHUB_TOKEN

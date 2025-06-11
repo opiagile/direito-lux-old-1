@@ -73,7 +73,106 @@ Divida o desenvolvimento em módulos independentes, sugerindo a ordem de impleme
 - ✅ **Módulo 2 Completo:** Kong Gateway, OPA, Prometheus, Grafana, Jaeger (observabilidade)  
 - ✅ **Módulo 3 Completo:** Serviço Go consulta jurídica, Circuit Breaker, ELK Stack
 - ✅ **Módulo 4 Completo:** FastAPI Python, ChromaDB, LangChain RAG, Ragas, OpenAI/Vertex AI
-- 🚧 **Módulo 0 Parcial:** Docker Compose configurado, CI/CD e Vault pendentes
+- ✅ **Módulo 0 Completo:** CI/CD com GitHub Actions, IaC com Terraform, ArgoCD GitOps
+
+### Detalhes do Módulo 0 - Infrastructure & CI/CD
+
+**Stack Implementada:**
+- 🏗️ **Terraform**: Infrastructure as Code multi-cloud (GCP focus)
+- ⚙️ **GitHub Actions**: CI/CD pipeline com 3 ambientes e aprovações
+- 🔄 **ArgoCD**: GitOps para deploy declarativo Kubernetes
+- ☸️ **Google Kubernetes Engine**: Orquestração com auto-scaling
+- 🛡️ **Cloud Security**: IAM, Secrets Manager, Network Policies
+
+**Ambientes Configurados:**
+```yaml
+dev:
+  domain: dev.direito-lux.com.br
+  cluster: direito-lux-dev (e2-standard-2, 1-3 nodes)
+  database: Cloud SQL f1-micro (10GB)
+  redis: Memorystore Basic (1GB)
+  
+staging:
+  domain: homolog.direito-lux.com.br  
+  cluster: direito-lux-staging (e2-standard-4, 2-5 nodes)
+  database: Cloud SQL db-n1-standard-1 (50GB)
+  redis: Memorystore Standard (4GB)
+  
+production:
+  domain: app.direito-lux.com.br
+  cluster: direito-lux-prod (n1-standard-4, 3-10 nodes)
+  database: Cloud SQL db-n1-standard-2 (100GB, HA)
+  redis: Memorystore Standard (8GB, HA)
+```
+
+**Pipeline CI/CD Completo:**
+1. **Push Code** → **Build & Test** (Go + Python)
+2. **Security Scan** → **Build Docker Images** 
+3. **Deploy DEV** → **Smoke Tests**
+4. **Deploy STAGING** → **Integration Tests** + **Security Validation**
+5. **Manual Approval** → **Deploy PRODUCTION** (Blue-Green)
+
+**Features Implementadas:**
+- 🔐 **Security**: Trivy scan, Checkov IaC scan, OWASP ZAP
+- 💰 **Cost Control**: Infracost estimation em PRs
+- 📊 **Monitoring**: Prometheus, Grafana, AlertManager
+- 🔄 **GitOps**: ArgoCD com auto-sync e self-healing
+- 🚀 **Zero Downtime**: Blue-green deployment em produção
+- 📱 **Notifications**: Slack integration para todos os ambientes
+
+**Arquivos da Infraestrutura:**
+```
+infrastructure/
+├── terraform/
+│   ├── environments/dev/main.tf
+│   ├── environments/staging/main.tf  
+│   ├── environments/prod/main.tf
+│   └── modules/
+│       ├── gke/           # Kubernetes clusters
+│       ├── cloud-sql/     # PostgreSQL databases  
+│       ├── memorystore/   # Redis instances
+│       ├── load-balancer/ # Load balancers + SSL
+│       ├── iam/           # Service accounts + roles
+│       ├── secrets/       # Secret Manager
+│       └── monitoring/    # Cloud Monitoring
+├── argocd/
+│   └── applications/      # GitOps app definitions
+└── helm/
+    └── direito-lux/       # Helm charts + values
+```
+
+**Scripts de Automação:**
+- `scripts/setup-infrastructure.sh`: Setup completo da infraestrutura
+- `.github/workflows/ci-cd-pipeline.yml`: Pipeline de aplicação
+- `.github/workflows/infrastructure.yml`: Pipeline de infraestrutura
+
+**Segurança Implementada:**
+- 🔒 **Workload Identity**: Pods autenticam sem service account keys
+- 🛡️ **Network Policies**: Tráfego restrito entre pods
+- 🔐 **Secrets Management**: Google Secret Manager integrado
+- 📝 **Audit Logs**: Todos os acessos logados
+- 🔍 **Vulnerability Scanning**: Containers e IaC escaneados
+
+**Comandos de Inicialização:**
+```bash
+# Setup completo da infraestrutura
+./scripts/setup-infrastructure.sh full
+
+# Acessar ArgoCD
+kubectl port-forward svc/argocd-server -n argocd 8080:443
+
+# Acessar Grafana  
+kubectl port-forward svc/monitoring-grafana -n monitoring 3000:80
+
+# Deploy manual via ArgoCD CLI
+argocd app sync direito-lux-dev
+```
+
+**Custos Estimados (por ambiente):**
+- **DEV**: ~$150/mês (cluster pequeno + DB micro)
+- **STAGING**: ~$400/mês (cluster médio + DB standard)  
+- **PRODUCTION**: ~$1.200/mês (cluster HA + DB HA + backup)
+- **Total**: ~$1.750/mês para todos os ambientes
 
 ### Detalhes do Módulo 4 - IA Jurídica (RAG + Avaliação)
 
