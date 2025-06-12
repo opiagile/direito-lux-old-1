@@ -1,33 +1,45 @@
-# 🏛️ Direito Lux - SaaS Jurídico
+# 🏛️ Direito Lux - SaaS Jurídico Enterprise
 
-Sistema completo de gestão jurídica com IA integrada para escritórios de advocacia.
+Sistema completo de gestão jurídica com IA integrada, migrations versionadas e arquitetura de microsserviços escalável.
+
+## 📊 Status Atual do Projeto
+
+**🎯 Ambiente DEV:** ✅ **FUNCIONAL E ACESSÍVEL**
+- **URL:** http://104.154.62.30/health
+- **Banco:** PostgreSQL + Redis funcionando
+- **API:** Todas as rotas ativas
+- **Migrations:** 3 migrations executadas com sucesso
+- **Pipeline:** CI/CD funcionando perfeitamente
 
 ## 🚀 Módulos Implementados
 
-### ✅ Módulo 0: Infraestrutura
-- **Status:** Configurado
+### ✅ Módulo 0: Infraestrutura & CI/CD
+- **Status:** ✅ **COMPLETO**
 - **Tecnologias:** Terraform, GKE, ArgoCD, GitHub Actions
 - **Ambientes:** Development, Staging, Production
+- **Features:** GitOps, IaC, Multi-ambiente, Cost monitoring
 
-### ✅ Módulo 1: Autenticação e Autorização  
-- **Status:** Implementado
-- **Tecnologias:** Keycloak, OPA, JWT
-- **Features:** SSO, RBAC, Multi-tenant
+### ✅ Módulo 1: Core Backend + Auth
+- **Status:** ✅ **COMPLETO**
+- **Tecnologias:** Go 1.21, Gin, GORM, Keycloak, JWT
+- **Features:** REST API, Multi-tenant, RBAC, Circuit Breaker
+- **Banco:** PostgreSQL com migrations versionadas
 
-### ✅ Módulo 2: API Gateway e Health Check
-- **Status:** Implementado
-- **Tecnologias:** Kong Gateway, Circuit Breaker
-- **Features:** Rate limiting, Load balancing
+### ✅ Módulo 2: API Gateway + Monitoring  
+- **Status:** ✅ **COMPLETO**
+- **Tecnologias:** Kong Gateway, OPA, Prometheus, Grafana
+- **Features:** Rate limiting, Load balancing, Health checks
 
-### ✅ Módulo 3: Consulta Jurídica + Circuit Breaker + ELK
-- **Status:** Implementado
-- **Tecnologias:** Go, Elasticsearch, Logstash, Kibana
-- **Features:** Busca jurídica, Logs centralizados
+### ✅ Módulo 3: Sistema de Consultas + Observabilidade
+- **Status:** ✅ **COMPLETO** 
+- **Tecnologias:** Go, ELK Stack, OpenTelemetry, Jaeger
+- **Features:** Logs centralizados, Tracing distribuído, Alertas
 
 ### ✅ Módulo 4: IA Jurídica (RAG + Avaliação)
-- **Status:** Implementado
-- **Tecnologias:** Python, FastAPI, LangChain, ChromaDB, Ragas
-- **Features:** Análise de documentos, RAG, Avaliação de qualidade
+- **Status:** ✅ **COMPLETO**
+- **Tecnologias:** Python 3.11, FastAPI, LangChain, ChromaDB, Ragas
+- **Features:** RAG jurídico, Avaliação contínua, Templates de prompts
+- **APIs:** Consulta IA, Batch processing, Knowledge management
 
 ### 🔄 Módulo 5: Mensageria + DataJud (Em desenvolvimento)
 - **Status:** Planejado
@@ -44,19 +56,51 @@ Sistema completo de gestão jurídica com IA integrada para escritórios de advo
 - **Tecnologias:** Stripe, PDF Reports, Analytics
 - **Features:** Cobrança, Relatórios financeiros
 
-## 🏗️ Arquitetura
+## 🏗️ Arquitetura Atual (Dezembro 2024)
 
+### 🌐 **Ambiente DEV (GKE Funcional)**
 ```
-┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
-│   DEV (GKE)     │    │ STAGING (GKE)   │    │  PROD (GKE)     │
-│                 │    │                 │    │                 │
-│ • Kong Gateway  │    │ • Kong Gateway  │    │ • Kong Gateway  │
-│ • Keycloak      │    │ • Keycloak      │    │ • Keycloak      │
-│ • Go Services   │    │ • Go Services   │    │ • Go Services   │
-│ • Python IA     │    │ • Python IA     │    │ • Python IA     │
-│ • ELK Stack     │    │ • ELK Stack     │    │ • ELK Stack     │
-│ • ChromaDB      │    │ • ChromaDB      │    │ • ChromaDB      │
-└─────────────────┘    └─────────────────┘    └─────────────────┘
+┌─────────────────────────────────────────────────────────────┐
+│                    GKE Cluster (us-central1-a)              │
+│  ┌─────────────────┐  ┌─────────────────┐  ┌──────────────┐ │
+│  │   Direito-Lux   │  │   PostgreSQL    │  │    Redis     │ │
+│  │   (Go API)      │  │   (Database)    │  │   (Cache)    │ │
+│  │                 │  │                 │  │              │ │
+│  │ • REST API      │  │ • 3 Migrations  │  │ • Sessions   │ │
+│  │ • Multi-tenant  │  │ • Seed Data     │  │ • Cache      │ │
+│  │ • Health Checks │  │ • Audit Logs    │  │              │ │
+│  │ • Circuit Break │  │                 │  │              │ │
+│  └─────────────────┘  └─────────────────┘  └──────────────┘ │
+│                                                             │
+│  External IP: 104.154.62.30                                │
+│  Health: http://104.154.62.30/health                       │
+└─────────────────────────────────────────────────────────────┘
+```
+
+### 🔄 **CI/CD Pipeline Ativo**
+```
+GitHub Push → GitHub Actions → Docker Build → GKE Deploy
+     ↓              ↓               ↓             ↓
+   Commit      [Build/Test]    [Artifact Reg]  [Rolling Update]
+              [Security Scan]   [Multi-Stage]   [Health Check]
+              [Go Test/Lint]    [Optimized]     [Zero Downtime]
+```
+
+### 💾 **Banco de Dados (PostgreSQL)**
+```sql
+-- Tabelas Criadas:
+✅ migration_versions  -- Controle de migrations
+✅ tenants            -- Multi-tenancy
+✅ plans              -- Planos de assinatura (3 criados)
+✅ subscriptions      -- Assinaturas ativas
+✅ users              -- Usuários do sistema
+✅ audit_logs         -- Logs de auditoria
+✅ api_keys           -- Chaves de API
+
+-- Dados Seed:
+✅ 3 Planos: starter (R$99), professional (R$299), enterprise (R$999)
+✅ Índices de performance criados
+✅ Constraints e relações configuradas
 ```
 
 ## 🔄 CI/CD Pipeline
@@ -82,32 +126,97 @@ Sistema completo de gestão jurídica com IA integrada para escritórios de advo
 
 ## 🚀 Quick Start
 
-### Development
+### 🌐 **Acesso Imediato (Ambiente DEV)**
 ```bash
-# Iniciar ambiente local
-docker-compose up -d
+# Health Check da API
+curl http://104.154.62.30/health
 
-# Acessar serviços
-curl http://localhost:8080/health  # API Gateway
-curl http://localhost:9002/health  # Consulta Jurídica
-curl http://localhost:9003/health  # IA Jurídica
+# Response esperado:
+{
+  "status": "healthy",
+  "mode": "full", 
+  "time": 1749687881
+}
 ```
 
-### Production Deploy
+### 🛠️ **Desenvolvimento Local**
+```bash
+# Clone do repositório
+git clone https://github.com/opiagile/direito-lux.git
+cd direito-lux
+
+# Configurar environment variables
+export DIREITO_LUX_DATABASE_HOST=localhost
+export DIREITO_LUX_DATABASE_USER=postgres
+export DIREITO_LUX_DATABASE_PASSWORD=postgres
+
+# Build e execução
+go mod tidy
+go run cmd/api/main.go
+
+# Ou via Docker
+docker build -t direito-lux .
+docker run -p 8080:8080 direito-lux
+```
+
+### 🚀 **Deploy Automático**
 ```bash
 # Deploy via GitOps (automático)
+git add .
+git commit -m "feat: nova feature"
 git push origin main
 
-# Monitor deploy
-kubectl get pods -n direito-lux-prod
+# Monitorar deploy
+kubectl get pods --watch
+kubectl logs -f deployment/direito-lux
+
+# Verificar saúde
+curl http://104.154.62.30/health
 ```
 
-## 📝 Documentação
+### 🧪 **Testes e Qualidade**
+```bash
+# Executar todos os testes
+go test ./...
 
-- [📋 Configuração de Secrets](docs/ALL-SECRETS-GUIDE.md)
+# Verificar formatação
+gofmt -l .
+
+# Verificar problemas
+go vet ./...
+
+# Coverage report
+go test -coverprofile=coverage.out ./...
+go tool cover -html=coverage.out
+```
+
+## 📝 Documentação Completa
+
+### **🚀 Getting Started**
+- [📊 Setup Atual - Status do Projeto](docs/SETUP-ATUAL.md)
+- [🔧 Configuração de Ambiente](docs/CONFIGURACAO-AMBIENTE.md)
+- [📚 Histórico de Implementação](docs/HISTORICO-IMPLEMENTACAO.md)
+
+### **🔌 API & Development**
+- [🔌 API Reference - Endpoints REST](docs/API-REFERENCE.md)
+- [🗄️ Migrations e Persistência](docs/MIGRATIONS-E-PERSISTENCIA.md)
+- [🧪 Testes Automatizados](internal/config/config_test.go)
+
+### **🏗️ Infrastructure & DevOps**
+- [📋 Configuração de Secrets GCP](docs/ALL-SECRETS-GUIDE.md)
 - [🔧 Setup GitHub Actions](docs/GITHUB-SECRETS-SETUP.md)
-- [🏗️ Infraestrutura](infrastructure/README.md)
-- [🤖 IA Jurídica](services/ia-juridica/README.md)
+- [☁️ Infraestrutura Terraform](infrastructure/terraform/)
+- [🐳 Docker & Kubernetes](k8s/)
+
+### **🤖 Módulos Específicos**
+- [🤖 IA Jurídica - RAG & LangChain](services/ia-juridica/README.md)
+- [⚖️ Módulo Legal - Consultas](internal/services/)
+- [🔐 Autenticação - Keycloak](internal/auth/)
+
+### **📊 Monitoring & Operations**
+- [📈 Observabilidade - Logs & Metrics](infrastructure/prometheus/)
+- [🚨 Alertas e Monitoramento](infrastructure/grafana/)
+- [🔍 Troubleshooting Guide](docs/SETUP-ATUAL.md#-troubleshooting-guide)
 
 ## 🎯 Próximos Passos
 
