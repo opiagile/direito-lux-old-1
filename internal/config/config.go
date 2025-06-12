@@ -69,21 +69,35 @@ type ConsultaServiceConfig struct {
 }
 
 func Load() (*Config, error) {
+	// Set defaults first
+	setDefaults()
+
+	// Configure file paths
 	viper.SetConfigName("config")
 	viper.SetConfigType("yaml")
 	viper.AddConfigPath(".")
 	viper.AddConfigPath("./config")
 
-	viper.AutomaticEnv()
-	viper.SetEnvPrefix("DIREITO_LUX")
-
-	setDefaults()
-
+	// Read config file if exists (optional)
 	if err := viper.ReadInConfig(); err != nil {
 		if _, ok := err.(viper.ConfigFileNotFoundError); !ok {
 			return nil, fmt.Errorf("error reading config file: %w", err)
 		}
+		// Config file not found, continue with defaults + env vars
 	}
+
+	// Environment variables override everything
+	viper.AutomaticEnv()
+	viper.SetEnvPrefix("DIREITO_LUX")
+	
+	// Explicitly bind env vars to override config file values
+	viper.BindEnv("database.host", "DIREITO_LUX_DATABASE_HOST")
+	viper.BindEnv("database.port", "DIREITO_LUX_DATABASE_PORT")
+	viper.BindEnv("database.user", "DIREITO_LUX_DATABASE_USER")
+	viper.BindEnv("database.password", "DIREITO_LUX_DATABASE_PASSWORD")
+	viper.BindEnv("database.dbname", "DIREITO_LUX_DATABASE_DBNAME")
+	viper.BindEnv("database.sslmode", "DIREITO_LUX_DATABASE_SSLMODE")
+	viper.BindEnv("server.port", "DIREITO_LUX_SERVER_PORT")
 
 	var config Config
 	if err := viper.Unmarshal(&config); err != nil {

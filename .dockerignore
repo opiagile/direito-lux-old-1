@@ -1,55 +1,64 @@
-# Git
+# Ignore config files - use environment variables in containers
+config.yaml
+config.yaml.example
+config.docker.yaml
+
+# Ignore development files
+.env
+.env.local
+.env.development
+
+# Ignore Docker files
+Dockerfile*
+docker-compose*.yml
+
+# Ignore Git
 .git
 .gitignore
-.gitattributes
 
-# CI/CD
+# Ignore documentation
+README.md
+docs/
+*.md
+
+# Ignore scripts
+scripts/
+
+# Ignore tests
+*_test.go
+test/
+tests/
+
+# Ignore CI/CD
 .github/
-.gitlab-ci.yml
-.travis.yml
 
-# IDEs
-.idea/
+# Ignore Kubernetes manifests
+k8s/
+helm/
+
+# Ignore infrastructure
+infrastructure/
+
+# Ignore binaries
+*.exe
+*.so
+*.dylib
+*.dll
+
+# Ignore temporary files
+.DS_Store
 .vscode/
-*.iml
+.idea/
 *.swp
 *.swo
 *~
 
-# OS
-.DS_Store
-Thumbs.db
+# Ignore coverage files
+*.out
+coverage.html
 
-# Documentation
-*.md
-docs/
-LICENSE
-
-# Test files
-*_test.go
-testdata/
-coverage.out
-*.test
-
-# Build artifacts
-bin/
-dist/
-*.exe
-
-# Temporary files
-tmp/
-temp/
-*.tmp
-*.log
-
-# Docker
-Dockerfile
-docker-compose*.yml
-.dockerignore
-
-# Environment files
-.env
-.env.*
-
-# Vendor (if not using vendoring)
+# Ignore vendor (if using)
 vendor/
+
+# Ignore Postman collections
+postman/
