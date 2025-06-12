@@ -41,7 +41,10 @@ func main() {
 
 	logger.Info("Starting Direito Lux API",
 		zap.String("version", "1.0.0"),
-		zap.String("mode", cfg.Server.Mode))
+		zap.String("mode", cfg.Server.Mode),
+		zap.String("db_host", cfg.Database.Host),
+		zap.String("db_user", cfg.Database.User),
+		zap.String("server_port", cfg.Server.Port))
 
 	// Check if running in demo/healthcheck mode
 	demoMode := os.Getenv("DEMO_MODE") == "true" || os.Getenv("HEALTHCHECK_ONLY") == "true"
