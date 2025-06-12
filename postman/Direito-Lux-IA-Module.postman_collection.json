@@ -7,9 +7,22 @@
   },
   "variable": [
     {
-      "key": "base_url",
+      "key": "base_url_local",
       "value": "http://localhost:9003",
-      "type": "string"
+      "type": "string",
+      "description": "IA Service - Local Development"
+    },
+    {
+      "key": "base_url_dev",
+      "value": "http://localhost:9003",
+      "type": "string",
+      "description": "IA Service - DEV Environment (quando deployado)"
+    },
+    {
+      "key": "base_url",
+      "value": "{{base_url_local}}",
+      "type": "string",
+      "description": "URL ativa (altere para base_url_dev quando necessário)"
     }
   ],
   "item": [

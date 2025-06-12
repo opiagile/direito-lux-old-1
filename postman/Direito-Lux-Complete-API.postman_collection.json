@@ -1,0 +1,552 @@
+{
+  "info": {
+    "name": "Direito Lux - Complete API",
+    "description": "Collection completa para testar toda a API do Direito Lux - Backend Go + IA Python",
+    "version": "2.0.0",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "base_url_dev",
+      "value": "http://104.154.62.30",
+      "type": "string",
+      "description": "Base URL para ambiente DEV (GKE)"
+    },
+    {
+      "key": "base_url_local",
+      "value": "http://localhost:8080",
+      "type": "string",
+      "description": "Base URL para desenvolvimento local"
+    },
+    {
+      "key": "base_url_ia",
+      "value": "http://localhost:9003",
+      "type": "string",
+      "description": "Base URL para IA Jurídica (Python)"
+    },
+    {
+      "key": "jwt_token",
+      "value": "",
+      "type": "string",
+      "description": "JWT Token para autenticação"
+    }
+  ],
+  "item": [
+    {
+      "name": "🏥 Health & Status",
+      "item": [
+        {
+          "name": "Health Check - DEV",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url_dev}}/health",
+              "host": ["{{base_url_dev}}"],
+              "path": ["health"]
+            },
+            "description": "Verificar se a API principal está funcionando no ambiente DEV"
+          },
+          "response": [
+            {
+              "name": "Healthy Response",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url_dev}}/health",
+                  "host": ["{{base_url_dev}}"],
+                  "path": ["health"]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"status\": \"healthy\",\n  \"mode\": \"full\",\n  \"time\": 1749687881\n}"
+            }
+          ]
+        },
+        {
+          "name": "Health Check - Local",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url_local}}/health",
+              "host": ["{{base_url_local}}"],
+              "path": ["health"]
+            },
+            "description": "Verificar se a API principal está funcionando localmente"
+          }
+        }
+      ]
+    },
+    {
+      "name": "🔐 Authentication",
+      "item": [
+        {
+          "name": "Login",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"admin@direito-lux.com.br\",\n  \"password\": \"admin123\",\n  \"tenant_id\": \"uuid-tenant\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url_dev}}/api/v1/auth/login",
+              "host": ["{{base_url_dev}}"],
+              "path": ["api", "v1", "auth", "login"]
+            },
+            "description": "Autenticar usuário e obter JWT token"
+          }
+        },
+        {
+          "name": "Refresh Token",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"refresh_token\": \"{{refresh_token}}\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url_dev}}/api/v1/auth/refresh",
+              "host": ["{{base_url_dev}}"],
+              "path": ["api", "v1", "auth", "refresh"]
+            },
+            "description": "Renovar JWT token usando refresh token"
+          }
+        },
+        {
+          "name": "Forgot Password",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"user@direito-lux.com.br\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url_dev}}/api/v1/auth/forgot-password",
+              "host": ["{{base_url_dev}}"],
+              "path": ["api", "v1", "auth", "forgot-password"]
+            },
+            "description": "Iniciar processo de recuperação de senha"
+          }
+        }
+      ]
+    },
+    {
+      "name": "🏢 Tenant Management",
+      "item": [
+        {
+          "name": "Create Tenant",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Escritório Silva & Associados\",\n  \"email\": \"contato@silva-advogados.com.br\",\n  \"phone\": \"+5511999999999\",\n  \"document\": \"12.345.678/0001-90\",\n  \"plan_id\": \"professional\",\n  \"settings\": {\n    \"timezone\": \"America/Sao_Paulo\",\n    \"language\": \"pt-BR\",\n    \"features\": {\n      \"ai_enabled\": true,\n      \"billing_enabled\": true\n    }\n  }\n}"
+            },
+            "url": {
+              "raw": "{{base_url_dev}}/api/v1/tenants",
+              "host": ["{{base_url_dev}}"],
+              "path": ["api", "v1", "tenants"]
+            },
+            "description": "Criar novo tenant (escritório/empresa)"
+          }
+        },
+        {
+          "name": "List Tenants",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url_dev}}/api/v1/tenants?page=1&limit=20&status=active",
+              "host": ["{{base_url_dev}}"],
+              "path": ["api", "v1", "tenants"],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "20"
+                },
+                {
+                  "key": "status",
+                  "value": "active"
+                }
+              ]
+            },
+            "description": "Listar todos os tenants com paginação"
+          }
+        },
+        {
+          "name": "Get Tenant",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url_dev}}/api/v1/tenants/{{tenant_id}}",
+              "host": ["{{base_url_dev}}"],
+              "path": ["api", "v1", "tenants", "{{tenant_id}}"]
+            },
+            "description": "Obter detalhes de um tenant específico"
+          }
+        },
+        {
+          "name": "Update Tenant",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Escritório Silva, Santos & Associados\",\n  \"phone\": \"+5511888888888\",\n  \"settings\": {\n    \"features\": {\n      \"ai_enabled\": false\n    }\n  }\n}"
+            },
+            "url": {
+              "raw": "{{base_url_dev}}/api/v1/tenants/{{tenant_id}}",
+              "host": ["{{base_url_dev}}"],
+              "path": ["api", "v1", "tenants", "{{tenant_id}}"]
+            },
+            "description": "Atualizar informações do tenant"
+          }
+        },
+        {
+          "name": "Tenant Usage Stats",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url_dev}}/api/v1/tenants/{{tenant_id}}/usage",
+              "host": ["{{base_url_dev}}"],
+              "path": ["api", "v1", "tenants", "{{tenant_id}}", "usage"]
+            },
+            "description": "Obter estatísticas de uso do tenant"
+          }
+        }
+      ]
+    },
+    {
+      "name": "👤 User Profile",
+      "item": [
+        {
+          "name": "Get Profile",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url_dev}}/api/v1/profile",
+              "host": ["{{base_url_dev}}"],
+              "path": ["api", "v1", "profile"]
+            },
+            "description": "Obter perfil do usuário autenticado"
+          }
+        },
+        {
+          "name": "Update Profile",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"João da Silva\",\n  \"avatar_url\": \"https://example.com/new-avatar.jpg\",\n  \"preferences\": {\n    \"theme\": \"dark\",\n    \"language\": \"en-US\"\n  }\n}"
+            },
+            "url": {
+              "raw": "{{base_url_dev}}/api/v1/profile",
+              "host": ["{{base_url_dev}}"],
+              "path": ["api", "v1", "profile"]
+            },
+            "description": "Atualizar perfil do usuário"
+          }
+        }
+      ]
+    },
+    {
+      "name": "🤖 IA Jurídica",
+      "item": [
+        {
+          "name": "Health Check IA",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url_ia}}/health",
+              "host": ["{{base_url_ia}}"],
+              "path": ["health"]
+            },
+            "description": "Verificar se o serviço de IA está funcionando"
+          }
+        },
+        {
+          "name": "Consulta Jurídica - Direitos Fundamentais",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"question\": \"O que são direitos fundamentais e onde estão previstos na Constituição?\",\n  \"query_type\": \"legislacao\",\n  \"evaluate_response\": true\n}"
+            },
+            "url": {
+              "raw": "{{base_url_ia}}/api/v1/rag/query",
+              "host": ["{{base_url_ia}}"],
+              "path": ["api", "v1", "rag", "query"]
+            },
+            "description": "Consulta jurídica com RAG sobre direitos fundamentais"
+          }
+        },
+        {
+          "name": "Consulta Jurídica - Responsabilidade Civil",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"question\": \"Quais são os elementos da responsabilidade civil? Explique o artigo 186 do Código Civil.\",\n  \"query_type\": \"legislacao\",\n  \"evaluate_response\": true\n}"
+            },
+            "url": {
+              "raw": "{{base_url_ia}}/api/v1/rag/query",
+              "host": ["{{base_url_ia}}"],
+              "path": ["api", "v1", "rag", "query"]
+            },
+            "description": "Consulta sobre responsabilidade civil"
+          }
+        },
+        {
+          "name": "Batch Query",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"queries\": [\n    {\n      \"question\": \"O que é ato ilícito?\",\n      \"query_type\": \"legislacao\"\n    },\n    {\n      \"question\": \"Quais são os direitos de liberdade?\",\n      \"query_type\": \"legislacao\"\n    },\n    {\n      \"question\": \"O que caracteriza abandono de emprego?\",\n      \"query_type\": \"legislacao\"\n    }\n  ]\n}"
+            },
+            "url": {
+              "raw": "{{base_url_ia}}/api/v1/rag/batch-query",
+              "host": ["{{base_url_ia}}"],
+              "path": ["api", "v1", "rag", "batch-query"]
+            },
+            "description": "Múltiplas consultas jurídicas em uma requisição"
+          }
+        },
+        {
+          "name": "Knowledge Base Stats",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url_ia}}/api/v1/knowledge/stats",
+              "host": ["{{base_url_ia}}"],
+              "path": ["api", "v1", "knowledge", "stats"]
+            },
+            "description": "Estatísticas da base de conhecimento jurídico"
+          }
+        },
+        {
+          "name": "Add Legal Document",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"content\": \"Art. 1º Esta lei estabelece normas de proteção e defesa do consumidor, de ordem pública e interesse social, nos termos dos arts. 5º, inciso XXXII, 170, inciso V, da Constituição Federal e art. 48 de suas Disposições Transitórias.\",\n  \"metadata\": {\n    \"title\": \"Código de Defesa do Consumidor - Art. 1º\",\n    \"source_type\": \"codigo_consumidor\",\n    \"law_number\": \"Lei nº 8.078/1990\",\n    \"article_number\": \"Art. 1º\",\n    \"subject\": \"direito_consumidor\",\n    \"keywords\": [\"consumidor\", \"proteção\", \"defesa\"]\n  }\n}"
+            },
+            "url": {
+              "raw": "{{base_url_ia}}/api/v1/knowledge/documents",
+              "host": ["{{base_url_ia}}"],
+              "path": ["api", "v1", "knowledge", "documents"]
+            },
+            "description": "Adicionar novo documento jurídico à base"
+          }
+        },
+        {
+          "name": "Evaluate Response",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"question\": \"O que são direitos fundamentais?\",\n  \"answer\": \"Direitos fundamentais são direitos básicos e essenciais reconhecidos e protegidos pela Constituição Federal, garantindo a dignidade da pessoa humana.\",\n  \"contexts\": [\n    \"Art. 5º Todos são iguais perante a lei, sem distinção de qualquer natureza, garantindo-se aos brasileiros e aos estrangeiros residentes no País a inviolabilidade do direito à vida, à liberdade, à igualdade, à segurança e à propriedade.\"\n  ],\n  \"ground_truth\": \"Direitos fundamentais são direitos básicos previstos na Constituição Federal que garantem a dignidade humana.\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url_ia}}/api/v1/evaluation/evaluate",
+              "host": ["{{base_url_ia}}"],
+              "path": ["api", "v1", "evaluation", "evaluate"]
+            },
+            "description": "Avaliar qualidade de resposta usando Ragas"
+          }
+        }
+      ]
+    },
+    {
+      "name": "📊 Database & System",
+      "item": [
+        {
+          "name": "Available Plans",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url_dev}}/api/v1/plans",
+              "host": ["{{base_url_dev}}"],
+              "path": ["api", "v1", "plans"]
+            },
+            "description": "Listar planos disponíveis (dados seed do banco)"
+          }
+        },
+        {
+          "name": "System Stats",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url_dev}}/api/v1/admin/stats",
+              "host": ["{{base_url_dev}}"],
+              "path": ["api", "v1", "admin", "stats"]
+            },
+            "description": "Estatísticas gerais do sistema (admin only)"
+          }
+        }
+      ]
+    }
+  ],
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "// Auto-set environment based on URL",
+          "const baseUrl = pm.variables.get('base_url_dev');",
+          "if (baseUrl && baseUrl.includes('104.154.62.30')) {",
+          "    console.log('Using DEV environment');",
+          "} else if (baseUrl && baseUrl.includes('localhost')) {",
+          "    console.log('Using LOCAL environment');",
+          "}"
+        ]
+      }
+    },
+    {
+      "listen": "test",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "// Auto-extract JWT token from login responses",
+          "if (pm.response.json() && pm.response.json().access_token) {",
+          "    pm.globals.set('jwt_token', pm.response.json().access_token);",
+          "    console.log('JWT token saved globally');",
+          "}",
+          "",
+          "// Log response time",
+          "console.log('Response time: ' + pm.response.responseTime + 'ms');",
+          "",
+          "// Basic status check",
+          "pm.test('Status code is success', function () {",
+          "    pm.expect(pm.response.code).to.be.oneOf([200, 201, 202]);",
+          "});"
+        ]
+      }
+    }
+  ]
+}
