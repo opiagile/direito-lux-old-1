@@ -98,6 +98,9 @@ func Load() (*Config, error) {
 	viper.BindEnv("database.dbname", "DIREITO_LUX_DATABASE_DBNAME")
 	viper.BindEnv("database.sslmode", "DIREITO_LUX_DATABASE_SSLMODE")
 	viper.BindEnv("server.port", "DIREITO_LUX_SERVER_PORT")
+	viper.BindEnv("redis.host", "DIREITO_LUX_REDIS_HOST")
+	viper.BindEnv("redis.port", "DIREITO_LUX_REDIS_PORT")
+	viper.BindEnv("redis.password", "DIREITO_LUX_REDIS_PASSWORD")
 
 	var config Config
 	if err := viper.Unmarshal(&config); err != nil {
